@@ -1,0 +1,144 @@
+export const blockColors = [
+  ["#ee2223", "#12a79d", "#f89f1c"], //bloki 3x3 poziomy 1-3
+  ["#8bc63e", "#e64d9c", "#939ea7"], //bloki 3x3 poziomy 4-6
+  ["#fff101", "#504077", "#00aeef"], //bloki 3x3 poziomy 7-9
+];
+
+export const sections = [
+  {
+    name: "Kolorowe piksele",
+    backgroundColors: false,
+    items: [
+      { color: "#090102", img: null },
+      { color: "#939ea6", img: null },
+      { color: "#f7ec12", img: null },
+      { color: "#ebe5c4", img: null },
+      { color: "#faa41a", img: null },
+      { color: "#ec008c", img: null },
+      { color: "#ed1e24", img: null },
+      { color: "#613d18", img: null },
+      { color: "#498ccb", img: null },
+      { color: "#292874", img: null },
+      { color: "#8066ad", img: null },
+      { color: "#288b43", img: null },
+    ],
+  },
+  {
+    name: "Krążki obrazkowe sudoku",
+    backgroundColors: [
+      "#ee2223",
+      "#12a79d",
+      "#f89f1c",
+      "#8bc63e",
+      "#e64d9c",
+      "#939ea7",
+      "#fff101",
+      "#504077",
+      "#00aeef",
+      "#ffffff",
+    ],
+    items: [
+      { color: null, img: "./assets/kolorowe_sudoku/img1.png" },
+      { color: null, img: "./assets/kolorowe_sudoku/img2.png" },
+      { color: null, img: "./assets/kolorowe_sudoku/img3.png" },
+      { color: null, img: "./assets/kolorowe_sudoku/img4.png" },
+      { color: null, img: "./assets/kolorowe_sudoku/img5.png" },
+      { color: null, img: "./assets/kolorowe_sudoku/img6.png" },
+      { color: null, img: "./assets/kolorowe_sudoku/img7.png" },
+      { color: null, img: "./assets/kolorowe_sudoku/img8.png" },
+      { color: null, img: "./assets/kolorowe_sudoku/img9.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img10.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img11.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img12.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img13.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img14.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img15.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img16.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img17.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img18.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img19.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img20.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img21.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img22.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img23.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img24.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img25.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img26.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img27.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img28.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img29.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img30.png" },
+    ],
+  },
+  {
+    name: "Krążki do kodowania",
+    backgroundColors: false,
+    items: [
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img1.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img2.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img3.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img4.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img5.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img6.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img7.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img8.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img9.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img10.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img11.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img12.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img13.png",
+        isCodingDisc: true,
+      },
+    ],
+  },
+];
