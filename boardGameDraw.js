@@ -30,7 +30,6 @@ export function drawBoard(ctxBoard, options) {
       let color = null;
       let x, y;
       if (isFront) {
-        // Sudoku: bloki i okrągłe komórki
         const blockRow = Math.floor(r / 3);
         const blockCol = Math.floor(c / 3);
         color = blockColors[blockRow][blockCol];
@@ -41,6 +40,19 @@ export function drawBoard(ctxBoard, options) {
         x = c * cellSize;
         y = r * cellSize;
         drawCell(ctxBoard, x, y, cellSize, null, false);
+      }
+
+      if (!options.isFront) {
+        ctxBoard.save();
+        ctxBoard.beginPath();
+        ctxBoard.lineWidth = 2.2; // grubość linii
+        ctxBoard.strokeStyle = "#333"; // kolor linii
+        // Y pozycji linii: nad ostatnim wierszem
+        const y = options.gridSize * options.cellSize;
+        ctxBoard.moveTo(0, y);
+        ctxBoard.lineTo(options.gridSize * options.cellSize, y);
+        ctxBoard.stroke();
+        ctxBoard.restore();
       }
     }
   }
@@ -129,45 +141,45 @@ export function drawPicker() {
   showImages(0);
 }
 
-export function drawPalette() {
-  const paletteList = document.getElementById("paletteList");
-  paletteList.innerHTML = "";
-  if (boardGameState.paletteHistory.length === 0) {
-    const info = document.createElement("div");
-    info.textContent = "Brak ostatnio użytych";
-    paletteList.appendChild(info);
-    return;
-  }
-  boardGameState.paletteHistory.forEach((item, i) => {
-    const btn = document.createElement("button");
-    btn.className = "imgButton";
-    btn.style.margin = "10px 0";
-    btn.style.width = "100px";
-    btn.style.height = "100px";
-    btn.style.borderRadius = "50%";
-    btn.style.border = "2px solid #333";
-    btn.style.background = item.color || "#ccc";
-    btn.style.position = "relative";
-    btn.style.display = "block";
+// export function drawPalette() {
+//   const paletteList = document.getElementById("paletteList");
+//   paletteList.innerHTML = "";
+//   if (boardGameState.paletteHistory.length === 0) {
+//     const info = document.createElement("div");
+//     info.textContent = "Brak ostatnio użytych";
+//     paletteList.appendChild(info);
+//     return;
+//   }
+//   boardGameState.paletteHistory.forEach((item, i) => {
+//     const btn = document.createElement("button");
+//     btn.className = "imgButton";
+//     btn.style.margin = "10px 0";
+//     btn.style.width = "100px";
+//     btn.style.height = "100px";
+//     btn.style.borderRadius = "50%";
+//     btn.style.border = "2px solid #333";
+//     btn.style.background = item.color || "#ccc";
+//     btn.style.position = "relative";
+//     btn.style.display = "block";
 
-    // Dodaj obrazek na środku jeśli jest
-    if (item.img) {
-      const img = document.createElement("img");
-      img.src = item.img;
-      img.style.width = "85%";
-      img.style.height = "85%";
-      img.style.position = "absolute";
-      img.style.top = "7.5%";
-      img.style.left = "7.5%";
-      img.style.borderRadius = "50%";
-      btn.appendChild(img);
-    }
+//     // Dodaj obrazek na środku jeśli jest
+//     if (item.img) {
+//       const img = document.createElement("img");
+//       img.src = item.img;
+//       img.style.width = "85%";
+//       img.style.height = "85%";
+//       img.style.position = "absolute";
+//       img.style.top = "7.5%";
+//       img.style.left = "7.5%";
+//       img.style.borderRadius = "50%";
+//       btn.appendChild(img);
+//     }
 
-    btn.onclick = () => pickFromList(item);
+//     btn.onclick = () => pickFromList(item);
 
-    paletteList.appendChild(btn);
-  });
-}
+//     paletteList.appendChild(btn);
+//   });
+// }
 
 export function drawCirclePiece(ctx, x, y, size, color, img) {
   ctx.save();
@@ -274,7 +286,7 @@ function pickFromList(item) {
     boardGameState.paletteHistory.unshift(item);
     if (boardGameState.paletteHistory.length > 10)
       boardGameState.paletteHistory.pop();
-    drawPalette();
+    //drawPalette();
   }
   console.log(item);
 

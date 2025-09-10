@@ -10,16 +10,16 @@ import {
   drawCirclePiece,
   drawBoard,
   drawPicker,
-  drawPalette,
   drawAxes,
   drawEmptyDisc,
 } from "./boardGameDraw.js";
 
 const gameMain = document.getElementById("gameMain");
 gameMain.innerHTML = `
-<div class="left" style="display: flex; flex-direction: column; align-items: center; width: 25%">
+<div class="left" style="display: flex;margin-right: 40px; flex-direction: column; align-items: center; width: 20%">
+  
  <div id="picker"></div>
-  <div
+   <div
           class="buttonsContainer"
           style="
             display: flex;
@@ -44,6 +44,7 @@ gameMain.innerHTML = `
             <option value="20">20 x 20</option>
           </select>
         </div>
+<div id="message" style="color: red; height: 24px; margin: 10px"></div>
 </div>
  
       <div
@@ -52,12 +53,8 @@ gameMain.innerHTML = `
           display: flex;
           flex-direction: column;
           align-items: center;
-          width: 50%;
         "
       >
-       
-
-        <div id="message" style="color: red; height: 24px; margin: 10px"></div>
         <div id="boardWrapper">
           <div
             id="yAxis"
@@ -87,20 +84,6 @@ gameMain.innerHTML = `
           </div>
         </div>
       </div>
-
-      <div class="lastItem">
-        <h3>Ostatnio użyte</h3>
-        <div
-          id="paletteList"
-          style="
-            display: flex;
-            flex-direction: row;
-            align-items: flex-start;
-            margin-top: 30px;
-            flex-wrap: wrap;
-            justify-content: space-around;
-          "
-        ></div>
       </div>
 `;
 
@@ -116,10 +99,10 @@ function updateCanvasSize() {
     board.height = 800;
     cellSize = board.width / boardGameState.cellSizeRows;
   } else {
-    const minCell = 60;
+    const minCell = 70;
     const size = boardGameState.gridSize * minCell;
     board.width = size;
-    board.height = size + 60;
+    board.height = size + 70;
     cellGridSize = board.width / boardGameState.gridSize;
   }
   drawAxes(board);
@@ -371,7 +354,7 @@ const uiHandlers = {
 
 function initGame() {
   drawPicker();
-  drawPalette();
+  //drawPalette();
   registerBoardEvents(board, boardHandlers);
   registerUIEvents(uiHandlers);
   renderBoard();
