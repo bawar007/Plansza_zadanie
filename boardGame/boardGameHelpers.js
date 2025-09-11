@@ -5,9 +5,15 @@ export function isOccupied(isFront, x, y, piecesFront, piecesGrid) {
     );
   } else {
     return piecesGrid.some(
-      (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5
+      (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && !p.isPixel
     );
   }
+}
+
+export function isPixelAt(x, y, piecesGrid) {
+  return piecesGrid.some(
+    (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
+  );
 }
 
 export function getImage(src, callback) {

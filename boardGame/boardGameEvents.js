@@ -16,4 +16,8 @@ export function registerUIEvents(handlers) {
   document
     .getElementById("gridSizeSelector")
     .addEventListener("change", handlers.onGridSizeChange);
+
+  document.getElementById("downloadBoardPdf").onclick = () => {
+    handlers.onDownloadBoardPdf();
+  };
 }

@@ -6,24 +6,6 @@ export const blockColors = [
 
 export const sections = [
   {
-    name: "Kolorowe piksele",
-    backgroundColors: false,
-    items: [
-      { color: "#090102", img: null },
-      { color: "#939ea6", img: null },
-      { color: "#f7ec12", img: null },
-      { color: "#ebe5c4", img: null },
-      { color: "#faa41a", img: null },
-      { color: "#ec008c", img: null },
-      { color: "#ed1e24", img: null },
-      { color: "#613d18", img: null },
-      { color: "#498ccb", img: null },
-      { color: "#292874", img: null },
-      { color: "#8066ad", img: null },
-      { color: "#288b43", img: null },
-    ],
-  },
-  {
     name: "Krążki obrazkowe sudoku",
     backgroundColors: [
       "#ee2223",
@@ -139,6 +121,24 @@ export const sections = [
         img: "./assets/symbole_do_kodowania/img13.png",
         isCodingDisc: true,
       },
+    ],
+  },
+  {
+    name: "Kolorowe piksele",
+    backgroundColors: false,
+    items: [
+      { color: "#090102", img: null, isPixel: true },
+      { color: "#939ea6", img: null, isPixel: true },
+      { color: "#f7ec12", img: null, isPixel: true },
+      { color: "#ebe5c4", img: null, isPixel: true },
+      { color: "#faa41a", img: null, isPixel: true },
+      { color: "#ec008c", img: null, isPixel: true },
+      { color: "#ed1e24", img: null, isPixel: true },
+      { color: "#613d18", img: null, isPixel: true },
+      { color: "#498ccb", img: null, isPixel: true },
+      { color: "#292874", img: null, isPixel: true },
+      { color: "#8066ad", img: null, isPixel: true },
+      { color: "#288b43", img: null, isPixel: true },
     ],
   },
 ];

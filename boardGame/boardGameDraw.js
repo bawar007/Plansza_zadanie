@@ -62,9 +62,12 @@ export function drawBoard(ctxBoard, options) {
     if (isFront) {
       drawCirclePiece(ctxBoard, p.x, p.y, cellSize, p.color, img);
     } else {
-      //   const size = cellSize * 0.6;
-      //   drawSquarePiece(ctxBoard, p.x, p.y, size, p.color, img);
-      drawCirclePiece(ctxBoard, p.x, p.y, cellSize, p.color, img);
+      if (p.isPixel) {
+        const size = cellSize;
+        drawSquarePiece(ctxBoard, p.x, p.y, size, p.color, img);
+      } else {
+        drawCirclePiece(ctxBoard, p.x, p.y, cellSize, p.color, img);
+      }
     }
   }
 }
@@ -97,12 +100,18 @@ export function drawPicker() {
     const noColoring = section.items.filter((item) => item.color !== null);
 
     const createBtn = (item, color) => {
+      const borderRadius = boardGameState.isFront
+        ? "50%"
+        : item.isPixel
+        ? "0"
+        : "50%";
+
       const imgBtn = document.createElement("button");
       imgBtn.className = "imgButton";
       imgBtn.title = "";
       imgBtn.style.width = "75px";
       imgBtn.style.height = "75px";
-      imgBtn.style.borderRadius = "50%";
+      imgBtn.style.borderRadius = borderRadius;
       imgBtn.style.border = `2px solid ${color === "#ffffff" ? "#000" : color}`;
       imgBtn.style.position = "relative";
       imgBtn.style.margin = "5px";
@@ -116,7 +125,7 @@ export function drawPicker() {
         img.style.position = "absolute";
         img.style.top = "7.5%";
         img.style.left = "7.5%";
-        img.style.borderRadius = "50%";
+        img.style.borderRadius = borderRadius;
         imgBtn.appendChild(img);
       }
 
@@ -231,11 +240,15 @@ export function drawAxes(board) {
   // Oś Y
   const yAxis = document.getElementById("yAxis");
   yAxis.innerHTML = "";
-  yAxis.style.height = board.height - 60 + "px";
-  for (let i = 1; i <= boardGameState.gridSize; i++) {
+  yAxis.style.height = board.height + "px";
+  for (let i = 1; i <= boardGameState.gridSize + 1; i++) {
     const div = document.createElement("div");
-    div.textContent = i;
-    div.style.height = board.height / boardGameState.gridSize + "px";
+    if (i === boardGameState.gridSize + 1) {
+      div.textContent = "K";
+    } else {
+      div.textContent = i;
+    }
+    div.style.height = board.height / (boardGameState.gridSize + 1) + "px";
     div.style.display = "flex";
     div.style.alignItems = "center";
     div.style.justifyContent = "center";
@@ -267,7 +280,6 @@ export function drawAxes(board) {
   yAxis.style.visibility = showAxes ? "visible" : "hidden";
   xAxis.style.visibility = showAxes ? "visible" : "hidden";
 }
-
 export function drawEmptyDisc(ctxBoard, size, dragging) {
   ctxBoard.beginPath();
   ctxBoard.arc(dragging.x, dragging.y, size * 0.4, 0, Math.PI * 2);
@@ -296,5 +308,6 @@ function pickFromList(item) {
     x: 0,
     y: 0,
     isCodingDisc: item.isCodingDisc ? true : false,
+    isPixel: !!item.isPixel,
   };
 }
