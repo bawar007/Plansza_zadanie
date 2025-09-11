@@ -50,6 +50,7 @@ export const sections = [
       { color: "#ffffff", img: "./assets/kolorowe_sudoku/img28.png" },
       { color: "#ffffff", img: "./assets/kolorowe_sudoku/img29.png" },
       { color: "#ffffff", img: "./assets/kolorowe_sudoku/img30.png" },
+      { color: "#ffffff", img: "./assets/kolorowe_sudoku/img31.png" },
     ],
   },
   {
