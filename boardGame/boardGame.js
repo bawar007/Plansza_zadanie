@@ -33,8 +33,8 @@ gameMain.innerHTML = `
           "
         >
           <button id="flipBoard">Obróć matę</button>
-          <button id="downloadBoardPdf">Pobierz planszę jako PDF</button>
-          <button id="clearBoard">Wyczyść aktualną planszę</button>
+          <button id="downloadBoardPdf">Pobierz jako PDF</button>
+          <button id="clearBoard">Wyczyść aktualną stronę</button>
           <select
             id="gridSizeSelector"
             style="margin: 10px; font-size: 16px; display: none"
@@ -406,7 +406,6 @@ const uiHandlers = {
     tmpCanvas.height = gridPixelSize + marginTop;
     const tmpCtx = tmpCanvas.getContext("2d");
 
-    // Rysuj planszę i dragging z przesunięciem
     tmpCtx.drawImage(
       board,
       0,
@@ -437,13 +436,11 @@ const uiHandlers = {
       tmpCtx.textAlign = "center";
       const cellSize = gridPixelSize / (boardGameState.gridSize + 1);
 
-      // Oś X (litery) – tylko dla zwykłych kolumn
       for (let c = 0; c < boardGameState.gridSize; c++) {
         const x = marginLeft + c * cellSize + cellSize / 2;
         tmpCtx.fillText(String.fromCharCode(65 + c), x, marginTop - 10);
       }
 
-      // Oś Y (cyfry + ostatni wiersz)
       for (let r = 0; r < boardGameState.gridSize + 1; r++) {
         const y = marginTop + r * cellSize + cellSize / 2 + 8;
         if (r === boardGameState.gridSize) {
@@ -455,18 +452,15 @@ const uiHandlers = {
       tmpCtx.restore();
     }
 
-    // Zamień canvas na obrazek
     const imgData = tmpCanvas.toDataURL("image/png");
     const pdfW = 210;
     const pdfH = 297;
 
-    // 70% szerokości A4
     const gridW = pdfW * 0.7;
-    const gridH = gridW; // zachowaj proporcje kwadratu
+    const gridH = gridW;
 
-    // Wyśrodkuj planszę na stronie
     const offsetX = (pdfW - gridW) / 2;
-    const offsetY = 40; // margines od góry
+    const offsetY = 40;
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({
@@ -475,14 +469,11 @@ const uiHandlers = {
       format: [pdfW, pdfH],
     });
 
-    // Dodaj planszę do PDF
     pdf.addImage(imgData, "PNG", offsetX, offsetY, gridW, gridH);
 
-    // Dodaj logo do PDF w lewym górnym rogu
     const logo = new window.Image();
     logo.src = "assets/images/logo.png";
     logo.onload = function () {
-      // Zamień logo na base64
       const logoCanvas = document.createElement("canvas");
       logoCanvas.width = logo.width;
       logoCanvas.height = logo.height;
@@ -490,10 +481,8 @@ const uiHandlers = {
       logoCtx.drawImage(logo, 0, 0);
       const logoBase64 = logoCanvas.toDataURL("image/png");
 
-      // Dodaj logo do PDF (np. 80x40px, lewy górny róg)
       pdf.addImage(logoBase64, "PNG", 10, 10, 30, 15);
 
-      // Dodaj napis www w prawym górnym rogu PDF
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(12);
       pdf.setTextColor("#000");

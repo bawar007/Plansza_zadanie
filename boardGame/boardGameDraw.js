@@ -1,6 +1,5 @@
 import { boardGameState } from "./boardGameState.js";
 import { blockColors, sections } from "./boardGameData.js";
-// jeśli getImage jest w helpers
 
 function drawCell(ctxBoard, x, y, size, color, arc) {
   ctxBoard.beginPath();
@@ -15,7 +14,7 @@ function drawCell(ctxBoard, x, y, size, color, arc) {
 
 export function drawBoard(ctxBoard, options) {
   const {
-    isFront, // true: sudoku, false: siatka
+    isFront,
     cellSize, // rozmiar komórki
     gridSize, // liczba wierszy/kolumn
     pieces, // tablica krążków
@@ -24,6 +23,9 @@ export function drawBoard(ctxBoard, options) {
   ctxBoard.clearRect(0, 0, ctxBoard.canvas.width, ctxBoard.canvas.height);
 
   const rows = isFront ? gridSize : gridSize + 1;
+
+  const boardWidth = gridSize * cellSize;
+  const boardHeight = gridSize * cellSize;
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < gridSize; c++) {
@@ -45,8 +47,8 @@ export function drawBoard(ctxBoard, options) {
       if (!options.isFront) {
         ctxBoard.save();
         ctxBoard.beginPath();
-        ctxBoard.lineWidth = 2.2; // grubość linii
-        ctxBoard.strokeStyle = "#333"; // kolor linii
+        ctxBoard.lineWidth = 2.2;
+        ctxBoard.strokeStyle = "#333";
         // Y pozycji linii: nad ostatnim wierszem
         const y = options.gridSize * options.cellSize;
         ctxBoard.moveTo(0, y);
@@ -55,6 +57,29 @@ export function drawBoard(ctxBoard, options) {
         ctxBoard.restore();
       }
     }
+  }
+  // Rysowanie linii przez środek planszy
+  if (!options.isFront) {
+    ctxBoard.save();
+    ctxBoard.strokeStyle = "#ff0000";
+    ctxBoard.lineWidth = 2;
+    const midCol = Math.floor(gridSize / 2);
+    console.log(midCol);
+
+    const midRow = Math.floor((rows - 1) / 2);
+
+    // pionowa linia przez środek
+    ctxBoard.beginPath();
+    ctxBoard.moveTo(midCol * cellSize, 0);
+    ctxBoard.lineTo(midCol * cellSize, boardHeight);
+    ctxBoard.stroke();
+
+    // pozioma linia przez środek
+    ctxBoard.beginPath();
+    ctxBoard.moveTo(0, midRow * cellSize);
+    ctxBoard.lineTo(boardWidth, midRow * cellSize);
+    ctxBoard.stroke();
+    ctxBoard.restore();
   }
 
   for (let p of pieces) {
