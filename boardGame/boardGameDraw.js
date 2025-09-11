@@ -12,7 +12,7 @@ function drawCell(ctxBoard, x, y, size, color, arc) {
   ctxBoard.stroke();
 }
 
-export function drawBoard(ctxBoard, options) {
+export function drawBoard(ctxOverlay, ctxBoard, options) {
   const {
     isFront,
     cellSize, // rozmiar komórki
@@ -20,12 +20,25 @@ export function drawBoard(ctxBoard, options) {
     pieces, // tablica krążków
   } = options;
 
-  ctxBoard.clearRect(0, 0, ctxBoard.canvas.width, ctxBoard.canvas.height);
+  const codeRows = 3;
+  const codeMargin = 70;
 
-  const rows = isFront ? gridSize : gridSize + 1;
+  // Rozmiary planszy i sekcji kodowania
+  const rows = isFront ? 9 : gridSize;
 
   const boardWidth = gridSize * cellSize;
   const boardHeight = gridSize * cellSize;
+  const codeSectionY = boardHeight + codeMargin;
+  const codeSectionHeight = codeRows * cellSize;
+
+  // Ustaw rozmiar canvasu
+  ctxBoard.canvas.width = boardWidth;
+  !isFront &&
+    (ctxBoard.canvas.height = boardHeight + codeMargin + codeSectionHeight);
+  !isFront &&
+    (ctxOverlay.canvas.height = boardHeight + codeMargin + codeSectionHeight);
+  ctxBoard.clearRect(0, 0, ctxBoard.canvas.width, ctxBoard.canvas.height);
+  ctxOverlay.clearRect(0, 0, ctxOverlay.canvas.width, ctxOverlay.canvas.height);
 
   // --- Rysowanie komórek ---
   for (let r = 0; r < rows; r++) {
@@ -50,6 +63,27 @@ export function drawBoard(ctxBoard, options) {
     }
   }
 
+  ctxBoard.save();
+  ctxBoard.lineWidth = 4;
+  ctxBoard.strokeStyle = "#000";
+  ctxBoard.strokeRect(0, 0, boardWidth, boardHeight);
+  ctxBoard.restore();
+
+  if (!isFront) {
+    for (let r = 0; r < codeRows; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        const x = c * cellSize;
+        const y = codeSectionY + r * cellSize;
+        drawCell(ctxBoard, x, y, cellSize, null, false);
+      }
+    }
+    ctxBoard.save();
+    ctxBoard.lineWidth = 4;
+    ctxBoard.strokeStyle = "#000";
+    ctxBoard.strokeRect(0, codeSectionY, boardWidth, codeSectionHeight);
+    ctxBoard.restore();
+  }
+
   // --- Dolna linia planszy (tylko dla back) ---
   if (!isFront) {
     ctxBoard.save();
@@ -70,7 +104,7 @@ export function drawBoard(ctxBoard, options) {
     ctxBoard.lineWidth = 2;
 
     const midCol = gridSize / 2;
-    const midRow = (rows - 1) / 2;
+    const midRow = rows / 2;
 
     // pionowa linia przez środek
     ctxBoard.beginPath();
@@ -264,19 +298,23 @@ export function drawSquarePiece(ctx, x, y, size, color, img) {
   }
 }
 
-export function drawAxes(board) {
+export function drawAxes(board, cellSize) {
   // Oś Y
+  console.log(cellSize);
+
   const yAxis = document.getElementById("yAxis");
   yAxis.innerHTML = "";
-  yAxis.style.height = board.height + "px";
-  for (let i = 1; i <= boardGameState.gridSize + 1; i++) {
+  yAxis.style.height = board.height + cellSize * 4 + "px";
+  let k = 1;
+  for (let i = 1; i <= boardGameState.gridSize + 4; i++) {
     const div = document.createElement("div");
-    if (i === boardGameState.gridSize + 1) {
-      div.textContent = "K";
+    if (i > boardGameState.gridSize + 1) {
+      div.textContent = "K" + k;
+      k++;
     } else {
-      div.textContent = i;
+      if (i !== boardGameState.gridSize + 1) div.textContent = i;
     }
-    div.style.height = board.height / (boardGameState.gridSize + 1) + "px";
+    div.style.height = board.height / boardGameState.gridSize + "px";
     div.style.display = "flex";
     div.style.alignItems = "center";
     div.style.justifyContent = "center";

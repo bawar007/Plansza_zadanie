@@ -1,7 +1,7 @@
 export const boardGameState = {
   cellSizeRows: 9,
   gridSize: 10,
-  isFront: true,
+  isFront: false,
   dragging: null,
   prevPiece: null,
   paletteHistory: [],

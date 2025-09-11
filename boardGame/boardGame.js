@@ -64,7 +64,7 @@ gameMain.innerHTML = `
             style="
               display: flex;
               flex-direction: column;
-              justify-content: center;
+              justify-content: flex-start;
               margin-right: 2px;
               position: absolute;
               left: -25px;
@@ -112,23 +112,23 @@ function updateCanvasSize() {
     const size = boardGameState.gridSize * minCell;
     board.width = size;
     boardOverlay.width = size;
-    board.height = size + 70;
-    boardOverlay.height = size + 70;
+    board.height = size;
+    boardOverlay.height = size;
     cellGridSize = board.width / boardGameState.gridSize;
   }
-  drawAxes(board);
+  drawAxes(board, cellSize);
 }
 
 function renderBoard() {
   if (boardGameState.isFront) {
-    drawBoard(ctxBoard, {
+    drawBoard(ctxOverlay, ctxBoard, {
       isFront: boardGameState.isFront,
       cellSize: cellSize,
       gridSize: boardGameState.cellSizeRows,
       pieces: boardGameState.piecesFront,
     });
   } else {
-    drawBoard(ctxBoard, {
+    drawBoard(ctxOverlay, ctxBoard, {
       isFront: boardGameState.isFront,
       cellSize: cellGridSize,
       gridSize: boardGameState.gridSize,
@@ -242,16 +242,14 @@ const boardHandlers = {
       ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
       const cellSizeDefalut = boardGameState.isFront ? cellSize : cellGridSize;
 
-      const { c, r, x, y } = getMousePos(e, board, cellSizeDefalut);
+      const { x, y } = getMousePos(e, board, cellSizeDefalut);
 
-      const cells = boardGameState.isFront
-        ? boardGameState.cellSizeRows
-        : boardGameState.gridSize + 1;
-
-      const isLastRow = r === boardGameState.gridSize;
       const isCodingDisc = !!boardGameState.dragging.isCodingDisc;
-
-      if (r >= 0 && r < cells && c >= 0 && c < cells) {
+      const boardHeight = boardGameState.gridSize * cellGridSize;
+      const codeRows = 3;
+      const codeStartY = boardHeight + 70;
+      // Jeśli kliknięto w główną planszę
+      if (y >= 0 && y < boardHeight) {
         if (
           !isOccupied(
             boardGameState.isFront,
@@ -261,20 +259,18 @@ const boardHandlers = {
             boardGameState.piecesGrid
           )
         ) {
-          if (!boardGameState.isFront && !isLastRow && isCodingDisc) {
-            showMessage(
-              "Krążki do kodowania można dodać tylko w sekcjach k1, k2, k3 !"
-            );
-            return;
-          }
-
           if (boardGameState.dragging.isPixel) {
             if (isPixelAt(x, y, boardGameState.piecesGrid)) {
               showMessage("Nie można malować na już istniejącym pixelu!");
               return;
             }
           }
-
+          if (!boardGameState.isFront && isCodingDisc) {
+            showMessage(
+              "Krążki do kodowania można dodać tylko w sekcjach k1, k2, k3 !"
+            );
+            return;
+          }
           const pieceObj = {
             x,
             y,
@@ -293,9 +289,49 @@ const boardHandlers = {
           boardGameState.prevPiece = null;
           showMessage("");
           renderBoard();
-        } else {
-          showMessage("Nie można postawić");
-          return;
+        }
+      }
+      // Jeśli kliknięto w pustą przestrzeń
+      if (y >= boardHeight && y < codeStartY) {
+        // Nie dodawaj krążka!
+        return;
+      }
+
+      // Jeśli kliknięto w sekcję kodowania
+      if (y >= codeStartY && y < codeStartY + codeRows * cellSize) {
+        if (
+          !isOccupied(
+            boardGameState.isFront,
+            x,
+            y,
+            boardGameState.piecesFront,
+            boardGameState.piecesGrid
+          )
+        ) {
+          if (boardGameState.dragging.isPixel) {
+            if (isPixelAt(x, y, boardGameState.piecesGrid)) {
+              showMessage("Nie można malować na już istniejącym pixelu!");
+              return;
+            }
+          }
+          const pieceObj = {
+            x,
+            y,
+            color: boardGameState.dragging.color,
+            img: boardGameState.dragging.img,
+            isCodingDisc: isCodingDisc,
+            isPixel: !!boardGameState.dragging.isPixel,
+          };
+
+          if (boardGameState.isFront) {
+            boardGameState.piecesFront.push(pieceObj);
+          } else {
+            boardGameState.piecesGrid.push(pieceObj);
+          }
+          boardGameState.dragging = null;
+          boardGameState.prevPiece = null;
+          showMessage("");
+          renderBoard();
         }
       }
     }
