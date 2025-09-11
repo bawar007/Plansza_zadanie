@@ -196,8 +196,10 @@ const boardHandlers = {
       if (r >= 0 && r < cells && c >= 0 && c < cells) {
         const isLastRow = !isFront && r === gridSize;
         const isCodingDisc = !!dragging.isCodingDisc;
-        if (isLastRow && !isCodingDisc) {
-          showMessage("Tylko krążki do kodowania można dodać w tym miejscu !");
+        if (!boardGameState.isFront && !isLastRow && isCodingDisc) {
+          showMessage(
+            "Krążki do kodowania można dodać tylko w sekcjach k1, k2, k3 !"
+          );
           board.style.cursor = "not-allowed";
         } else if (isOccupied(isFront, x, y, piecesFront, piecesGrid)) {
           showMessage("Nie można postawić");
@@ -259,9 +261,9 @@ const boardHandlers = {
             boardGameState.piecesGrid
           )
         ) {
-          if (isLastRow && !isCodingDisc) {
+          if (!boardGameState.isFront && !isLastRow && isCodingDisc) {
             showMessage(
-              "Tylko krążki do kodowania można dodać w tym miejscu !"
+              "Krążki do kodowania można dodać tylko w sekcjach k1, k2, k3 !"
             );
             return;
           }

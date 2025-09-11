@@ -27,14 +27,18 @@ export function drawBoard(ctxBoard, options) {
   const boardWidth = gridSize * cellSize;
   const boardHeight = gridSize * cellSize;
 
+  // --- Rysowanie komórek ---
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < gridSize; c++) {
-      let color = null;
-      let x, y;
+      let x,
+        y,
+        color = null;
+
       if (isFront) {
         const blockRow = Math.floor(r / 3);
         const blockCol = Math.floor(c / 3);
-        color = blockColors[blockRow][blockCol];
+        color = blockColors?.[blockRow]?.[blockCol] ?? "#fff";
+
         x = c * cellSize + cellSize / 2;
         y = r * cellSize + cellSize / 2;
         drawCell(ctxBoard, x, y, cellSize, color, true);
@@ -43,30 +47,30 @@ export function drawBoard(ctxBoard, options) {
         y = r * cellSize;
         drawCell(ctxBoard, x, y, cellSize, null, false);
       }
-
-      if (!options.isFront) {
-        ctxBoard.save();
-        ctxBoard.beginPath();
-        ctxBoard.lineWidth = 2.2;
-        ctxBoard.strokeStyle = "#333";
-        // Y pozycji linii: nad ostatnim wierszem
-        const y = options.gridSize * options.cellSize;
-        ctxBoard.moveTo(0, y);
-        ctxBoard.lineTo(options.gridSize * options.cellSize, y);
-        ctxBoard.stroke();
-        ctxBoard.restore();
-      }
     }
   }
-  // Rysowanie linii przez środek planszy
-  if (!options.isFront) {
+
+  // --- Dolna linia planszy (tylko dla back) ---
+  if (!isFront) {
+    ctxBoard.save();
+    ctxBoard.beginPath();
+    ctxBoard.lineWidth = 2.2;
+    ctxBoard.strokeStyle = "#333";
+    const y = gridSize * cellSize;
+    ctxBoard.moveTo(0, y);
+    ctxBoard.lineTo(boardWidth, y);
+    ctxBoard.stroke();
+    ctxBoard.restore();
+  }
+
+  // --- Linie przez środek planszy (tylko dla back) ---
+  if (!isFront) {
     ctxBoard.save();
     ctxBoard.strokeStyle = "#ff0000";
     ctxBoard.lineWidth = 2;
-    const midCol = Math.floor(gridSize / 2);
-    console.log(midCol);
 
-    const midRow = Math.floor((rows - 1) / 2);
+    const midCol = gridSize / 2;
+    const midRow = (rows - 1) / 2;
 
     // pionowa linia przez środek
     ctxBoard.beginPath();
@@ -79,20 +83,19 @@ export function drawBoard(ctxBoard, options) {
     ctxBoard.moveTo(0, midRow * cellSize);
     ctxBoard.lineTo(boardWidth, midRow * cellSize);
     ctxBoard.stroke();
+
     ctxBoard.restore();
   }
 
+  // --- Rysowanie pionków ---
   for (let p of pieces) {
     const img = p.img ? boardGameState.loadedImages[p.img] : null;
-    if (isFront) {
-      drawCirclePiece(ctxBoard, p.x, p.y, cellSize, p.color, img);
+    const size = cellSize;
+
+    if (isFront || !p.isPixel) {
+      drawCirclePiece(ctxBoard, p.x, p.y, size, p.color, img);
     } else {
-      if (p.isPixel) {
-        const size = cellSize;
-        drawSquarePiece(ctxBoard, p.x, p.y, size, p.color, img);
-      } else {
-        drawCirclePiece(ctxBoard, p.x, p.y, cellSize, p.color, img);
-      }
+      drawSquarePiece(ctxBoard, p.x, p.y, size, p.color, img);
     }
   }
 }
