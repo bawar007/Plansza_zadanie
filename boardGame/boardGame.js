@@ -14,7 +14,9 @@ import {
   drawPicker,
   drawAxes,
   drawEmptyDisc,
+  drawCell,
 } from "./boardGameDraw.js";
+import { blockColors } from "./boardGameData.js";
 
 const gameMain = document.getElementById("gameMain");
 gameMain.innerHTML = `
@@ -247,7 +249,7 @@ const boardHandlers = {
       const isCodingDisc = !!boardGameState.dragging.isCodingDisc;
       const boardHeight = boardGameState.gridSize * cellGridSize;
       const codeRows = 3;
-      const codeStartY = boardHeight + 70;
+      const codeStartY = boardGameState.isFront ? 0 : boardHeight + 70;
       // Jeśli kliknięto w główną planszę
       if (y >= 0 && y < boardHeight) {
         if (
@@ -432,73 +434,133 @@ const uiHandlers = {
     const board = document.getElementById("board");
     const boardOverlay = document.getElementById("boardOverlay");
 
-    const gridPixelSize = boardGameState.isFront
-      ? board.width
-      : board.width + 70;
+    const isFront = boardGameState.isFront;
 
-    const marginTop = 40;
-    const marginLeft = 40;
+    // Parametry planszy
+    const gridSize = isFront
+      ? boardGameState.cellSizeRows
+      : boardGameState.gridSize;
+    const cellSize = board.width / gridSize;
+    const codeRows = isFront ? 0 : 3;
+    const codeMargin = isFront ? 0 : 70;
+    const boardWidth = gridSize * cellSize;
+    const boardHeight = gridSize * cellSize;
+    const codeSectionY = boardHeight + codeMargin;
+    const codeSectionHeight = codeRows * cellSize;
 
+    // Utwórz tymczasowy canvas o odpowiednich wymiarach
     const tmpCanvas = document.createElement("canvas");
-    tmpCanvas.width = gridPixelSize + marginLeft + 10;
-    tmpCanvas.height = gridPixelSize + marginTop;
+    tmpCanvas.width = boardWidth + 40;
+    tmpCanvas.height = boardHeight + codeMargin + codeSectionHeight + 40;
     const tmpCtx = tmpCanvas.getContext("2d");
 
-    tmpCtx.drawImage(
-      board,
-      0,
-      0,
-      gridPixelSize,
-      gridPixelSize,
-      marginLeft,
-      marginTop,
-      gridPixelSize,
-      gridPixelSize
-    );
-    tmpCtx.drawImage(
-      boardOverlay,
-      0,
-      0,
-      gridPixelSize,
-      gridPixelSize,
-      marginLeft,
-      marginTop,
-      gridPixelSize,
-      gridPixelSize
-    );
+    // Białe tło
+    tmpCtx.fillStyle = "#fff";
+    tmpCtx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
 
-    if (!boardGameState.isFront) {
+    if (!isFront) {
+      // --- OPISY OSI X ---
       tmpCtx.save();
-      tmpCtx.font = "bold 24px Arial";
-      tmpCtx.fillStyle = "#333";
+      tmpCtx.font = "bold 20px Arial";
+      tmpCtx.fillStyle = "#4a6792";
       tmpCtx.textAlign = "center";
-      const cellSize = gridPixelSize / (boardGameState.gridSize + 1);
-
-      for (let c = 0; c < boardGameState.gridSize; c++) {
-        const x = marginLeft + c * cellSize + cellSize / 2;
-        tmpCtx.fillText(String.fromCharCode(65 + c), x, marginTop - 10);
+      for (let c = 0; c < gridSize; c++) {
+        const x = 40 + c * cellSize + cellSize / 2;
+        const y = 30;
+        tmpCtx.fillText(String.fromCharCode(65 + c), x, y);
       }
+      tmpCtx.restore();
 
-      for (let r = 0; r < boardGameState.gridSize + 1; r++) {
-        const y = marginTop + r * cellSize + cellSize / 2 + 8;
-        if (r === boardGameState.gridSize) {
-          tmpCtx.fillText("K", marginLeft - 20, y);
+      // --- OPISY OSI Y ---
+      tmpCtx.save();
+      tmpCtx.font = "bold 20px Arial";
+      tmpCtx.fillStyle = "#4a6792";
+      tmpCtx.textAlign = "right";
+      for (let r = 0; r < gridSize; r++) {
+        const x = 35;
+        const y = 40 + r * cellSize + cellSize / 2 + 7;
+        tmpCtx.fillText((r + 1).toString(), x, y);
+      }
+      for (let r = 0; r < codeRows; r++) {
+        const x = 35;
+        const y = 40 + codeSectionY + r * cellSize + cellSize / 2 + 7;
+        tmpCtx.fillText(`K${r + 1}`, x, y);
+      }
+    }
+    tmpCtx.restore();
+
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        let x,
+          y,
+          color = null;
+
+        if (isFront) {
+          const blockRow = Math.floor(r / 3);
+          const blockCol = Math.floor(c / 3);
+          color = blockColors?.[blockRow]?.[blockCol] ?? "#fff";
+
+          x = 40 + c * cellSize + cellSize / 2;
+          y = 40 + r * cellSize + cellSize / 2;
+          drawCell(tmpCtx, x, y, cellSize, color, true);
         } else {
-          tmpCtx.fillText((r + 1).toString(), marginLeft - 20, y);
+          x = 40 + c * cellSize;
+          y = 40 + r * cellSize;
+          drawCell(tmpCtx, x, y, cellSize, null, false);
         }
       }
+    }
+
+    // --- RAMKA WOKÓŁ SIATKI ---
+    tmpCtx.save();
+    tmpCtx.lineWidth = 4;
+    tmpCtx.strokeStyle = "#000";
+    tmpCtx.strokeRect(40, 40, boardWidth, boardHeight);
+    tmpCtx.restore();
+
+    // --- RYSOWANIE SEKCJI KODOWANIA (tylko back) ---
+    if (!isFront) {
+      for (let r = 0; r < codeRows; r++) {
+        for (let c = 0; c < gridSize; c++) {
+          const x = 40 + c * cellSize;
+          const y = 40 + codeSectionY + r * cellSize;
+          tmpCtx.strokeStyle = "#000";
+          tmpCtx.lineWidth = 1;
+          tmpCtx.strokeRect(x, y, cellSize, cellSize);
+        }
+      }
+      // Ramka wokół sekcji kodowania
+      tmpCtx.save();
+      tmpCtx.lineWidth = 4;
+      tmpCtx.strokeStyle = "#000";
+      tmpCtx.strokeRect(40, 40 + codeSectionY, boardWidth, codeSectionHeight);
       tmpCtx.restore();
     }
 
+    // --- RYSOWANIE KRĄŻKÓW/PIXELI ---
+    const pieces = isFront
+      ? boardGameState.piecesFront
+      : boardGameState.piecesGrid;
+    for (let p of pieces) {
+      const img = p.img ? boardGameState.loadedImages[p.img] : null;
+      if (isFront || !p.isPixel) {
+        drawCirclePiece(tmpCtx, p.x + 40, p.y + 40, cellSize, p.color, img);
+      } else {
+        drawSquarePiece(tmpCtx, p.x + 40, p.y + 40, cellSize, p.color, img);
+      }
+    }
+
+    // Zamień canvas na obrazek
     const imgData = tmpCanvas.toDataURL("image/png");
     const pdfW = 210;
     const pdfH = 297;
 
-    const gridW = pdfW * 0.7;
-    const gridH = gridW;
-
-    const offsetX = (pdfW - gridW) / 2;
-    const offsetY = 40;
+    // Obrazek na 70% szerokości strony
+    const imgW = pdfW * 0.7;
+    const scale = imgW / tmpCanvas.width;
+    const imgH = tmpCanvas.height * scale;
+    const offsetX = (pdfW - imgW) / 2;
+    const offsetY = 30;
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({
@@ -507,8 +569,9 @@ const uiHandlers = {
       format: [pdfW, pdfH],
     });
 
-    pdf.addImage(imgData, "PNG", offsetX, offsetY, gridW, gridH);
+    pdf.addImage(imgData, "PNG", offsetX, offsetY, imgW, imgH);
 
+    // Dodaj logo w lewym górnym rogu
     const logo = new window.Image();
     logo.src = "assets/images/logo.png";
     logo.onload = function () {
@@ -518,7 +581,6 @@ const uiHandlers = {
       const logoCtx = logoCanvas.getContext("2d");
       logoCtx.drawImage(logo, 0, 0);
       const logoBase64 = logoCanvas.toDataURL("image/png");
-
       pdf.addImage(logoBase64, "PNG", 10, 10, 30, 15);
 
       pdf.setFont("helvetica", "bold");

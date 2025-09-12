@@ -1,7 +1,7 @@
 import { boardGameState } from "./boardGameState.js";
 import { blockColors, sections } from "./boardGameData.js";
 
-function drawCell(ctxBoard, x, y, size, color, arc) {
+export function drawCell(ctxBoard, x, y, size, color, arc) {
   ctxBoard.beginPath();
   arc
     ? ctxBoard.arc(x, y, size / 2 - 3, 0, Math.PI * 2)
