@@ -540,7 +540,7 @@ export async function drawPdfFile(coordToPrint) {
 
     // Obrazek na 70% szerokości strony
 
-    const imgW = coordToPrint ? pdfW * 0.4 : pdfW * 0.7;
+    const imgW = coordToPrint ? pdfW * 0.7 : pdfW * 0.9;
     const scale = imgW / tmpCanvas.width;
     const imgH = tmpCanvas.height * scale;
     const offsetX = (pdfW - imgW) / 2;
