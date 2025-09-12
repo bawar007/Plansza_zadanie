@@ -319,8 +319,6 @@ export function drawSquarePiece(ctx, x, y, size, color, img) {
 
 export function drawAxes(board, cellSize) {
   // Oś Y
-  console.log(cellSize);
-
   const yAxis = document.getElementById("yAxis");
   yAxis.innerHTML = "";
   yAxis.style.height = board.height + cellSize * 4 + "px";
@@ -385,7 +383,6 @@ function pickFromList(item) {
       boardGameState.paletteHistory.pop();
     //drawPalette();
   }
-  console.log(item);
 
   boardGameState.dragging = {
     color: item.color,
@@ -507,8 +504,6 @@ export async function drawPdfFile(coordToPrint) {
           "#4466b0",
           boardGameState.lockedImg
         );
-      } else {
-        console.log("Brak obrazka do zablokowanego krążka: ");
       }
       // Ramka wokół sekcji kodowania
       tmpCtx.save();
