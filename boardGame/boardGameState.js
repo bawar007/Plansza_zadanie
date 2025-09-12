@@ -9,6 +9,7 @@ export const boardGameState = {
   piecesFront: [],
   piecesGrid: [],
   arrowPieces: [],
+  lockedImg: null,
 };
 
 export const arrowPieces = [];

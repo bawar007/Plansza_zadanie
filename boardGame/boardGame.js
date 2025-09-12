@@ -15,6 +15,7 @@ import {
   drawAxes,
   drawEmptyDisc,
   drawCell,
+  drawPdfFile,
 } from "./boardGameDraw.js";
 import { blockColors } from "./boardGameData.js";
 
@@ -169,6 +170,31 @@ const boardHandlers = {
 
     const cells = isFront ? cellSizeRows : gridSize + 1;
 
+    if (!boardGameState.isFront) {
+      const codeRows = 3;
+      const codeMargin = 70;
+      const boardHeight = boardGameState.gridSize * cellGridSize;
+      const codeStartY = boardHeight + codeMargin;
+
+      const col = Math.floor(x / cellSizeDefalut);
+      const row = Math.floor((y - codeStartY) / cellSizeDefalut);
+
+      const isLockedCell =
+        !boardGameState.isFront &&
+        y >= codeStartY &&
+        y < codeStartY + codeRows * cellSizeDefalut &&
+        col === 0 &&
+        row === 0;
+
+      if (isLockedCell) {
+        showMessage("Nie można modyfikować tej komórki!");
+        board.style.cursor = "not-allowed";
+      } else {
+        showMessage("");
+        board.style.cursor = "default";
+      }
+    }
+
     if (dragging.img) {
       const img = loadedImages[dragging.img];
       if (img) {
@@ -250,6 +276,20 @@ const boardHandlers = {
       const boardHeight = boardGameState.gridSize * cellGridSize;
       const codeRows = 3;
       const codeStartY = boardGameState.isFront ? 0 : boardHeight + 70;
+      const col = Math.floor(x / cellSize);
+      const row = Math.floor((y - codeStartY) / cellSize);
+
+      const isLockedCell =
+        !boardGameState.isFront &&
+        y >= codeStartY &&
+        y < codeStartY + codeRows * cellSize &&
+        col === 0 &&
+        row === 0;
+
+      if (isLockedCell) {
+        showMessage("Nie można modyfikować tej komórki!");
+        return;
+      }
       // Jeśli kliknięto w główną planszę
       if (y >= 0 && y < boardHeight) {
         if (
@@ -431,167 +471,7 @@ const uiHandlers = {
     renderBoard();
   },
   onDownloadBoardPdf: () => {
-    const board = document.getElementById("board");
-    const boardOverlay = document.getElementById("boardOverlay");
-
-    const isFront = boardGameState.isFront;
-
-    // Parametry planszy
-    const gridSize = isFront
-      ? boardGameState.cellSizeRows
-      : boardGameState.gridSize;
-    const cellSize = board.width / gridSize;
-    const codeRows = isFront ? 0 : 3;
-    const codeMargin = isFront ? 0 : 70;
-    const boardWidth = gridSize * cellSize;
-    const boardHeight = gridSize * cellSize;
-    const codeSectionY = boardHeight + codeMargin;
-    const codeSectionHeight = codeRows * cellSize;
-
-    // Utwórz tymczasowy canvas o odpowiednich wymiarach
-    const tmpCanvas = document.createElement("canvas");
-    tmpCanvas.width = boardWidth + 40;
-    tmpCanvas.height = boardHeight + codeMargin + codeSectionHeight + 40;
-    const tmpCtx = tmpCanvas.getContext("2d");
-
-    // Białe tło
-    tmpCtx.fillStyle = "#fff";
-    tmpCtx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
-
-    if (!isFront) {
-      // --- OPISY OSI X ---
-      tmpCtx.save();
-      tmpCtx.font = "bold 20px Arial";
-      tmpCtx.fillStyle = "#4a6792";
-      tmpCtx.textAlign = "center";
-      for (let c = 0; c < gridSize; c++) {
-        const x = 40 + c * cellSize + cellSize / 2;
-        const y = 30;
-        tmpCtx.fillText(String.fromCharCode(65 + c), x, y);
-      }
-      tmpCtx.restore();
-
-      // --- OPISY OSI Y ---
-      tmpCtx.save();
-      tmpCtx.font = "bold 20px Arial";
-      tmpCtx.fillStyle = "#4a6792";
-      tmpCtx.textAlign = "right";
-      for (let r = 0; r < gridSize; r++) {
-        const x = 35;
-        const y = 40 + r * cellSize + cellSize / 2 + 7;
-        tmpCtx.fillText((r + 1).toString(), x, y);
-      }
-      for (let r = 0; r < codeRows; r++) {
-        const x = 35;
-        const y = 40 + codeSectionY + r * cellSize + cellSize / 2 + 7;
-        tmpCtx.fillText(`K${r + 1}`, x, y);
-      }
-    }
-    tmpCtx.restore();
-
-    for (let r = 0; r < gridSize; r++) {
-      for (let c = 0; c < gridSize; c++) {
-        let x,
-          y,
-          color = null;
-
-        if (isFront) {
-          const blockRow = Math.floor(r / 3);
-          const blockCol = Math.floor(c / 3);
-          color = blockColors?.[blockRow]?.[blockCol] ?? "#fff";
-
-          x = 40 + c * cellSize + cellSize / 2;
-          y = 40 + r * cellSize + cellSize / 2;
-          drawCell(tmpCtx, x, y, cellSize, color, true);
-        } else {
-          x = 40 + c * cellSize;
-          y = 40 + r * cellSize;
-          drawCell(tmpCtx, x, y, cellSize, null, false);
-        }
-      }
-    }
-
-    // --- RAMKA WOKÓŁ SIATKI ---
-    tmpCtx.save();
-    tmpCtx.lineWidth = 4;
-    tmpCtx.strokeStyle = "#000";
-    tmpCtx.strokeRect(40, 40, boardWidth, boardHeight);
-    tmpCtx.restore();
-
-    // --- RYSOWANIE SEKCJI KODOWANIA (tylko back) ---
-    if (!isFront) {
-      for (let r = 0; r < codeRows; r++) {
-        for (let c = 0; c < gridSize; c++) {
-          const x = 40 + c * cellSize;
-          const y = 40 + codeSectionY + r * cellSize;
-          tmpCtx.strokeStyle = "#000";
-          tmpCtx.lineWidth = 1;
-          tmpCtx.strokeRect(x, y, cellSize, cellSize);
-        }
-      }
-      // Ramka wokół sekcji kodowania
-      tmpCtx.save();
-      tmpCtx.lineWidth = 4;
-      tmpCtx.strokeStyle = "#000";
-      tmpCtx.strokeRect(40, 40 + codeSectionY, boardWidth, codeSectionHeight);
-      tmpCtx.restore();
-    }
-
-    // --- RYSOWANIE KRĄŻKÓW/PIXELI ---
-    const pieces = isFront
-      ? boardGameState.piecesFront
-      : boardGameState.piecesGrid;
-    for (let p of pieces) {
-      const img = p.img ? boardGameState.loadedImages[p.img] : null;
-      if (isFront || !p.isPixel) {
-        drawCirclePiece(tmpCtx, p.x + 40, p.y + 40, cellSize, p.color, img);
-      } else {
-        drawSquarePiece(tmpCtx, p.x + 40, p.y + 40, cellSize, p.color, img);
-      }
-    }
-
-    // Zamień canvas na obrazek
-    const imgData = tmpCanvas.toDataURL("image/png");
-    const pdfW = 210;
-    const pdfH = 297;
-
-    // Obrazek na 70% szerokości strony
-    const imgW = pdfW * 0.7;
-    const scale = imgW / tmpCanvas.width;
-    const imgH = tmpCanvas.height * scale;
-    const offsetX = (pdfW - imgW) / 2;
-    const offsetY = 30;
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: [pdfW, pdfH],
-    });
-
-    pdf.addImage(imgData, "PNG", offsetX, offsetY, imgW, imgH);
-
-    // Dodaj logo w lewym górnym rogu
-    const logo = new window.Image();
-    logo.src = "assets/images/logo.png";
-    logo.onload = function () {
-      const logoCanvas = document.createElement("canvas");
-      logoCanvas.width = logo.width;
-      logoCanvas.height = logo.height;
-      const logoCtx = logoCanvas.getContext("2d");
-      logoCtx.drawImage(logo, 0, 0);
-      const logoBase64 = logoCanvas.toDataURL("image/png");
-      pdf.addImage(logoBase64, "PNG", 10, 10, 30, 15);
-
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(12);
-      pdf.setTextColor("#000");
-      pdf.textWithLink("www.kodowanienadywanie.pl", pdfW - 10, 18, {
-        align: "right",
-      });
-
-      pdf.save("plansza.pdf");
-    };
+    drawPdfFile();
   },
 };
 
