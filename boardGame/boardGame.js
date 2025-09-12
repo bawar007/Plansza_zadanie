@@ -22,66 +22,33 @@ import {
 const gameMain = document.getElementById("gameMain");
 gameMain.innerHTML = `
 <div class="pickerPanel">
- <div id="picker"></div>
-<div id="message"></div>
+  <div id="picker"></div>
+  <div id="message"></div>
 
- <div
-          class="buttonsContainer"
-          "
-        >
-         <select
-            id="gridSizeSelector"
-            style="margin: 10px; font-size: 16px; display: none"
-          >
-            <option value="10">10 x 10</option>
-            <option value="12">12 x 12</option>
-            <option value="14">14 x 14</option>
-            <option value="16">16 x 16</option>
-            <option value="18">18 x 18</option>
-            <option value="20">20 x 20</option>
-          </select>
-        <button id="clearBoard">Wyczyść stronę</button>
-          <button id="flipBoard">Obróć matę</button>
-          <button id="downloadBoardPdf">Pobierz jako PDF</button>
-
-          
-          <button id="downloadCoords" style="display: none">Pobierz koordynaty</button>
-         
-        </div>
+  <div class="buttonsContainer">
+    <select id="gridSizeSelector" style="margin: 10px; font-size: 16px; display: none">
+      <option value="10">10 x 10</option>
+      <option value="12">12 x 12</option>
+      <option value="14">14 x 14</option>
+      <option value="16">16 x 16</option>
+      <option value="18">18 x 18</option>
+      <option value="20">20 x 20</option>
+    </select>
+    <button id="clearBoard">Wyczyść stronę</button>
+    <button id="flipBoard">Obróć matę</button>
+    <button id="downloadBoardPdf">Pobierz jako PDF</button>
+    <button id="downloadCoords" style="display: none">Pobierz koordynaty</button>
+  </div>
 </div>
- 
-      <div id="boardWrapper">
-          <div
-            id="yAxis"
-            style="
-              display: flex;
-              flex-direction: column;
-              justify-content: flex-start;
-              margin-right: 2px;
-              position: absolute;
-              left: -25px;
-              top: 0px;
-            "
-          ></div>
-          <div>
-            <div
-              id="xAxis"
-              style="
-                display: flex;
-                justify-content: center;
-                margin-bottom: 2px;
-                position: absolute;
-                top: -20px;
-                left: 0px;
-              "
-            ></div>
-            <canvas id="board" width="800" height="800"></canvas>
-              <canvas id="boardOverlay" width="800" height="800" style="position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none;"></canvas>
-          </div>
-          
-        </div>
-        
-      </div>
+<div id="boardWrapper">
+    <div id="yAxis"></div>
+    <div>
+      <div id="xAxis"></div>
+      <canvas id="board" width="800" height="800"></canvas>
+      <canvas id="boardOverlay" width="800" height="800"></canvas>
+    </div>
+  </div>
+</div>
 `;
 
 const board = document.getElementById("board");

@@ -575,54 +575,115 @@ export async function drawPdfFile(coordToPrint) {
     });
 
     if (!isFront && coordToPrint && coordToPrint.length > 0) {
-      let listY = offsetY + imgH + 20; // pod planszą
-      let iconSize = 16; // mm
-      let pdfTextSize = 12;
+      let listY = offsetY + imgH + 20; // początek pod planszą
+      const iconSize = 16; // mm
+      const pdfTextSize = 12;
       const maxListY = pdfH - 30; // dolny margines strony
+      const colW = pdfW / 2; // szerokość jednej kolumny
+      const iconX1 = 5; // lewa kolumna
+      const textX1 = iconX1 + iconSize + 5;
+      const iconX2 = colW + 5; // prawa kolumna
+      const textX2 = iconX2 + iconSize + 5;
+      const rowHeight = iconSize + 8; // wysokość bloku wiersza
 
-      for (const group of coordToPrint) {
-        // Tworzenie miniatury
-        const discImgData = await createDiscImage(group.img, group.color, 60);
+      for (let i = 0; i < coordToPrint.length; i += 2) {
+        // --- LEWA KOLUMNA ---
+        const group1 = coordToPrint[i];
+        let textLines1 = [];
+        if (group1) {
+          const coordsText1 = group1.coords.join(", ");
+          const maxTextWidth1 = colW - iconSize - 15;
+          let currentLine1 = "";
 
-        // Dodaj obrazek krążka
-        pdf.addImage(discImgData, "PNG", 5, listY, iconSize, iconSize);
+          coordsText1.split(", ").forEach((coord) => {
+            const testLine = currentLine1 ? currentLine1 + ", " + coord : coord;
+            if (pdf.getTextWidth(testLine) > maxTextWidth1 && currentLine1) {
+              textLines1.push(currentLine1);
+              currentLine1 = coord;
+            } else {
+              currentLine1 = testLine;
+            }
+          });
+          if (currentLine1) textLines1.push(currentLine1);
+        }
 
-        // --- ZAWIJANIE TEKSTU KOORDYNATÓW ---
-        pdf.setFontSize(pdfTextSize);
-        pdf.setTextColor("#333");
-        const coordsText = group.coords.join(", ");
-        const maxTextWidth = 170; // mm, dostosuj do szerokości strony
-        let textLines = [];
-        let currentLine = "";
+        // --- PRAWA KOLUMNA ---
+        const group2 = coordToPrint[i + 1];
+        let textLines2 = [];
+        if (group2) {
+          const coordsText2 = group2.coords.join(", ");
+          const maxTextWidth2 = colW - iconSize - 15;
+          let currentLine2 = "";
 
-        coordsText.split(", ").forEach((coord) => {
-          const testLine = currentLine ? currentLine + ", " + coord : coord;
-          if (pdf.getTextWidth(testLine) > maxTextWidth && currentLine) {
-            textLines.push(currentLine);
-            currentLine = coord;
-          } else {
-            currentLine = testLine;
-          }
-        });
-        if (currentLine) textLines.push(currentLine);
+          coordsText2.split(", ").forEach((coord) => {
+            const testLine = currentLine2 ? currentLine2 + ", " + coord : coord;
+            if (pdf.getTextWidth(testLine) > maxTextWidth2 && currentLine2) {
+              textLines2.push(currentLine2);
+              currentLine2 = coord;
+            } else {
+              currentLine2 = testLine;
+            }
+          });
+          if (currentLine2) textLines2.push(currentLine2);
+        }
 
-        // Dodaj tekst koordynatów, każda linia pod poprzednią
-        textLines.forEach((line, i) => {
-          pdf.text(
-            line,
-            5 + iconSize + 8,
-            listY - 1 + iconSize / 1.5 + i * (pdfTextSize + 2)
-          );
-        });
-
-        // Przesuń Y o wysokość wszystkich linii
-        listY += iconSize + 6 + (textLines.length - 1) * (pdfTextSize + 2);
+        // Oblicz wysokość wiersza (najwyższa z obu kolumn)
+        const linesCount = Math.max(
+          textLines1.length || 1,
+          textLines2.length || 1
+        );
+        const blockHeight = Math.max(
+          rowHeight,
+          iconSize + 6 + (linesCount - 1) * (pdfTextSize + 2)
+        );
 
         // --- DODAJ NOWĄ STRONĘ JEŚLI NIE MIEŚCI SIĘ NA JEDNEJ ---
-        if (listY + iconSize + 6 > maxListY) {
+        if (listY + blockHeight > maxListY) {
           pdf.addPage();
           listY = 30; // nowa strona, margines od góry
         }
+
+        // --- LEWA KOLUMNA: ikona + tekst ---
+        if (group1) {
+          const discImgData1 = await createDiscImage(
+            group1.img,
+            group1.color,
+            60
+          );
+          pdf.addImage(discImgData1, "PNG", iconX1, listY, iconSize, iconSize);
+
+          pdf.setFontSize(pdfTextSize);
+          pdf.setTextColor("#4a6792");
+          textLines1.forEach((line, idx) => {
+            pdf.text(
+              line,
+              textX1,
+              listY - 1 + iconSize / 1.5 + idx * (pdfTextSize + 2)
+            );
+          });
+        }
+
+        // --- PRAWA KOLUMNA: ikona + tekst ---
+        if (group2) {
+          const discImgData2 = await createDiscImage(
+            group2.img,
+            group2.color,
+            60
+          );
+          pdf.addImage(discImgData2, "PNG", iconX2, listY, iconSize, iconSize);
+
+          pdf.setFontSize(pdfTextSize);
+          pdf.setTextColor("#4a6792");
+          textLines2.forEach((line, idx) => {
+            pdf.text(
+              line,
+              textX2,
+              listY - 1 + iconSize / 1.5 + idx * (pdfTextSize + 2)
+            );
+          });
+        }
+
+        listY += blockHeight;
       }
     }
 

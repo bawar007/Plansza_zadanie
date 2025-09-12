@@ -7,6 +7,24 @@
   margin-top: 50px;
 }
 
+#yAxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  margin-right: 2px;
+  position: absolute;
+  left: -25px;
+  top: 0px;
+}
+#xAxis {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2px;
+  position: absolute;
+  top: -20px;
+  left: 0px;
+}
+
 .pickerPanel {
   display: flex;
   margin-right: 40px;
@@ -28,7 +46,7 @@
   width: 100%;
   border: 2px solid #333;
   padding: 10px;
-  height: 260px;
+  height: 400px;
 }
 
 .pickerItemsWrapper {
@@ -56,6 +74,14 @@
   justify-content: flex-start;
   flex-direction: column;
   position: relative;
+}
+
+#boardOverlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .buttonsContainer {
