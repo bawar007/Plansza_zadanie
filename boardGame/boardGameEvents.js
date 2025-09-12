@@ -20,4 +20,5 @@ export function registerUIEvents(handlers) {
   document.getElementById("downloadBoardPdf").onclick = () => {
     handlers.onDownloadBoardPdf();
   };
+  document.getElementById("downloadCoords").onclick = handlers.onDownloadCoords;
 }

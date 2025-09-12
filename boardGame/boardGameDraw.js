@@ -397,7 +397,7 @@ function pickFromList(item) {
   };
 }
 
-export function drawPdfFile() {
+export async function drawPdfFile(coordToPrint) {
   {
     const board = document.getElementById("board");
     const isFront = boardGameState.isFront;
@@ -519,15 +519,17 @@ export function drawPdfFile() {
     }
 
     // --- RYSOWANIE KRĄŻKÓW/PIXELI ---
-    const pieces = isFront
-      ? boardGameState.piecesFront
-      : boardGameState.piecesGrid;
-    for (let p of pieces) {
-      const img = p.img ? boardGameState.loadedImages[p.img] : null;
-      if (isFront || !p.isPixel) {
-        drawCirclePiece(tmpCtx, p.x + 40, p.y + 40, cellSize, p.color, img);
-      } else {
-        drawSquarePiece(tmpCtx, p.x + 40, p.y + 40, cellSize, p.color, img);
+    if (!coordToPrint) {
+      const pieces = isFront
+        ? boardGameState.piecesFront
+        : boardGameState.piecesGrid;
+      for (let p of pieces) {
+        const img = p.img ? boardGameState.loadedImages[p.img] : null;
+        if (isFront || !p.isPixel) {
+          drawCirclePiece(tmpCtx, p.x + 40, p.y + 40, cellSize, p.color, img);
+        } else {
+          drawSquarePiece(tmpCtx, p.x + 40, p.y + 40, cellSize, p.color, img);
+        }
       }
     }
 
@@ -537,7 +539,8 @@ export function drawPdfFile() {
     const pdfH = 297;
 
     // Obrazek na 70% szerokości strony
-    const imgW = pdfW * 0.7;
+
+    const imgW = coordToPrint ? pdfW * 0.4 : pdfW * 0.7;
     const scale = imgW / tmpCanvas.width;
     const imgH = tmpCanvas.height * scale;
     const offsetX = (pdfW - imgW) / 2;
@@ -552,26 +555,103 @@ export function drawPdfFile() {
 
     pdf.addImage(imgData, "PNG", offsetX, offsetY, imgW, imgH);
 
-    // Dodaj logo w lewym górnym rogu
+    // Dodaj logo i tekst TYLKO na pierwszej stronie!
     const logo = new window.Image();
     logo.src = "assets/images/logo.png";
-    logo.onload = function () {
-      const logoCanvas = document.createElement("canvas");
-      logoCanvas.width = logo.width;
-      logoCanvas.height = logo.height;
-      const logoCtx = logoCanvas.getContext("2d");
-      logoCtx.drawImage(logo, 0, 0);
-      const logoBase64 = logoCanvas.toDataURL("image/png");
-      pdf.addImage(logoBase64, "PNG", 10, 10, 30, 15);
+    await new Promise((res) => (logo.onload = res));
+    const logoCanvas = document.createElement("canvas");
+    logoCanvas.width = logo.width;
+    logoCanvas.height = logo.height;
+    const logoCtx = logoCanvas.getContext("2d");
+    logoCtx.drawImage(logo, 0, 0);
+    const logoBase64 = logoCanvas.toDataURL("image/png");
+    pdf.addImage(logoBase64, "PNG", 10, 10, 30, 15);
 
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(12);
-      pdf.setTextColor("#000");
-      pdf.textWithLink("www.kodowanienadywanie.pl", pdfW - 10, 18, {
-        align: "right",
-      });
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(12);
+    pdf.setTextColor("#000");
+    pdf.textWithLink("www.kodowanienadywanie.pl", pdfW - 10, 18, {
+      align: "right",
+    });
 
-      pdf.save("plansza.pdf");
-    };
+    if (!isFront && coordToPrint && coordToPrint.length > 0) {
+      let listY = offsetY + imgH + 20; // pod planszą
+      let iconSize = 16; // mm
+      let pdfTextSize = 12;
+      const maxListY = pdfH - 30; // dolny margines strony
+
+      for (const group of coordToPrint) {
+        // Tworzenie miniatury
+        const discImgData = await createDiscImage(group.img, group.color, 60);
+
+        // Dodaj obrazek krążka
+        pdf.addImage(discImgData, "PNG", 5, listY, iconSize, iconSize);
+
+        // --- ZAWIJANIE TEKSTU KOORDYNATÓW ---
+        pdf.setFontSize(pdfTextSize);
+        pdf.setTextColor("#333");
+        const coordsText = group.coords.join(", ");
+        const maxTextWidth = 170; // mm, dostosuj do szerokości strony
+        let textLines = [];
+        let currentLine = "";
+
+        coordsText.split(", ").forEach((coord) => {
+          const testLine = currentLine ? currentLine + ", " + coord : coord;
+          if (pdf.getTextWidth(testLine) > maxTextWidth && currentLine) {
+            textLines.push(currentLine);
+            currentLine = coord;
+          } else {
+            currentLine = testLine;
+          }
+        });
+        if (currentLine) textLines.push(currentLine);
+
+        // Dodaj tekst koordynatów, każda linia pod poprzednią
+        textLines.forEach((line, i) => {
+          pdf.text(
+            line,
+            5 + iconSize + 8,
+            listY - 1 + iconSize / 1.5 + i * (pdfTextSize + 2)
+          );
+        });
+
+        // Przesuń Y o wysokość wszystkich linii
+        listY += iconSize + 6 + (textLines.length - 1) * (pdfTextSize + 2);
+
+        // --- DODAJ NOWĄ STRONĘ JEŚLI NIE MIEŚCI SIĘ NA JEDNEJ ---
+        if (listY + iconSize + 6 > maxListY) {
+          pdf.addPage();
+          listY = 30; // nowa strona, margines od góry
+        }
+      }
+    }
+
+    pdf.save(`${!coordToPrint ? "plansza" : "koordynaty"}.pdf`);
   }
+}
+
+export async function createDiscImage(img, color, size = 60) {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+
+  if (img) {
+    const loadedImg = await loadImageAsync(img);
+    if (loadedImg) {
+      drawCirclePiece(ctx, size / 2, size / 2, size, color, loadedImg);
+    }
+  } else {
+    drawSquarePiece(ctx, size / 2, size / 2, size, color);
+  }
+  return canvas.toDataURL("image/png");
+}
+
+function loadImageAsync(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+  });
 }

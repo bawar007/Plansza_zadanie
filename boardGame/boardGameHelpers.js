@@ -38,3 +38,43 @@ export function getMousePos(e, board, cellSizeDefalut) {
   const y = r * cellSizeDefalut + cellSizeDefalut / 2;
   return { mx, my, c, r, x, y };
 }
+
+export function getCoordsList(gridSize, board, pieces) {
+  const cellSize = board.width / gridSize;
+  const codeMargin = 70;
+  const boardHeight = gridSize * cellSize;
+
+  // Grupowanie po obrazku i kolorze
+  const groups = {};
+
+  for (const p of pieces) {
+    let col = Math.floor(p.x / cellSize);
+    let row;
+    let label;
+
+    if (p.y < boardHeight) {
+      row = Math.floor(p.y / cellSize) + 1;
+      label = `${String.fromCharCode(65 + col)}${row}`;
+    } else {
+      row = Math.floor((p.y - boardHeight - codeMargin) / cellSize) + 1;
+      label = `${String.fromCharCode(65 + col)}K${row}`;
+    }
+
+    // Klucz: img+color (null jeśli brak)
+    const imgKey = p.img || null;
+    const colorKey = p.color || null;
+    const groupKey = `${imgKey}|${colorKey}`;
+
+    if (!groups[groupKey]) {
+      groups[groupKey] = {
+        img: imgKey,
+        color: colorKey,
+        coords: [],
+      };
+    }
+    groups[groupKey].coords.push(label);
+  }
+
+  // Zamiana na tablicę obiektów
+  return Object.values(groups);
+}

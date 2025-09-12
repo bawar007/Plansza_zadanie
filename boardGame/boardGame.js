@@ -4,6 +4,7 @@ import {
   showMessage,
   getMousePos,
   isPixelAt,
+  getCoordsList,
 } from "./boardGameHelpers.js";
 import { boardGameState } from "./boardGameState.js";
 import { registerBoardEvents, registerUIEvents } from "./boardGameEvents.js";
@@ -17,28 +18,18 @@ import {
   drawCell,
   drawPdfFile,
 } from "./boardGameDraw.js";
-import { blockColors } from "./boardGameData.js";
 
 const gameMain = document.getElementById("gameMain");
 gameMain.innerHTML = `
-<div class="left" style="display: flex;margin-right: 40px; flex-direction: column; align-items: center; width: 20%;     position: sticky;
-    top: 20px;">
+<div class="pickerPanel">
  <div id="picker"></div>
-   <div
+<div id="message"></div>
+
+ <div
           class="buttonsContainer"
-          style="
-            display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-evenly;
-            width: 100%;
           "
         >
-          <button id="flipBoard">Obróć matę</button>
-          <button id="downloadBoardPdf">Pobierz jako PDF</button>
-          <button id="clearBoard">Wyczyść aktualną stronę</button>
-          <select
+         <select
             id="gridSizeSelector"
             style="margin: 10px; font-size: 16px; display: none"
           >
@@ -49,19 +40,17 @@ gameMain.innerHTML = `
             <option value="18">18 x 18</option>
             <option value="20">20 x 20</option>
           </select>
+        <button id="clearBoard">Wyczyść stronę</button>
+          <button id="flipBoard">Obróć matę</button>
+          <button id="downloadBoardPdf">Pobierz jako PDF</button>
+
+          
+          <button id="downloadCoords" style="display: none">Pobierz koordynaty</button>
+         
         </div>
-<div id="message" style="color: red; height: 24px; margin: 10px"></div>
 </div>
  
-      <div
-        class="center"
-        style="
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        "
-      >
-        <div id="boardWrapper">
+      <div id="boardWrapper">
           <div
             id="yAxis"
             style="
@@ -89,8 +78,9 @@ gameMain.innerHTML = `
             <canvas id="board" width="800" height="800"></canvas>
               <canvas id="boardOverlay" width="800" height="800" style="position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none;"></canvas>
           </div>
+          
         </div>
-      </div>
+        
       </div>
 `;
 
@@ -458,6 +448,8 @@ const uiHandlers = {
     boardGameState.isFront = !boardGameState.isFront;
     document.getElementById("gridSizeSelector").style.display =
       boardGameState.isFront ? "none" : "block";
+    document.getElementById("downloadCoords").style.display =
+      boardGameState.isFront ? "none" : "block";
     updateCanvasSize();
     drawPicker();
     renderBoard();
@@ -472,6 +464,18 @@ const uiHandlers = {
   },
   onDownloadBoardPdf: () => {
     drawPdfFile();
+  },
+  onDownloadCoords: () => {
+    const coords = getCoordsList(
+      boardGameState.gridSize,
+      board,
+      boardGameState.piecesGrid
+    );
+    if (coords.length === 0) {
+      alert("Brak koordynatów do zapisania!");
+      return;
+    }
+    drawPdfFile(coords);
   },
 };
 
