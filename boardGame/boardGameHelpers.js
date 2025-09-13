@@ -23,6 +23,15 @@ export function getImage(src, callback) {
   img.src = src;
 }
 
+export function loadImageAsync(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+  });
+}
+
 export function showMessage(txt) {
   const msg = document.getElementById("message");
   msg.textContent = txt;
@@ -39,10 +48,9 @@ export function getMousePos(e, board, cellSizeDefalut) {
   return { mx, my, c, r, x, y };
 }
 
-export function getCoordsList(gridSize, board, pieces) {
-  const cellSize = board.width / gridSize;
-  const codeMargin = 70;
-  const boardHeight = gridSize * cellSize;
+export function getCoordsList(backSizeRows, board, pieces, codeMargin) {
+  const cellSize = board.width / backSizeRows;
+  const boardHeight = backSizeRows * cellSize;
 
   // Grupowanie po obrazku i kolorze
   const groups = {};
@@ -77,4 +85,22 @@ export function getCoordsList(gridSize, board, pieces) {
 
   // Zamiana na tablicę obiektów
   return Object.values(groups);
+}
+
+export function wrapText(pdf, text, maxWidth) {
+  const lines = [];
+  const coordsText = text.join(", ");
+  let currentLine = "";
+
+  coordsText.split(", ").forEach((coord) => {
+    const testLine = currentLine ? currentLine + ", " + coord : coord;
+    if (pdf.getTextWidth(testLine) > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = coord;
+    } else {
+      currentLine = testLine;
+    }
+  });
+  if (currentLine) lines.push(currentLine);
+  return lines;
 }

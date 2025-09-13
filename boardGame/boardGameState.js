@@ -1,15 +1,14 @@
 export const boardGameState = {
-  cellSizeRows: 9,
-  gridSize: 10,
+  frontSizeRows: 9,
+  backSizeRows: 10,
+  cellSize: 80,
   isFront: true,
   dragging: null,
   prevPiece: null,
-  paletteHistory: [],
   loadedImages: {},
   piecesFront: [],
   piecesGrid: [],
-  arrowPieces: [],
   lockedImg: null,
+  codeRows: 3,
+  codeMargin: 0,
 };
-
-export const arrowPieces = [];

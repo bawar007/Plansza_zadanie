@@ -13,10 +13,9 @@ import {
   drawSquarePiece,
   drawBoard,
   drawPicker,
-  drawAxes,
   drawEmptyDisc,
-  drawCell,
   drawPdfFile,
+  drawLabels,
 } from "./boardGameDraw.js";
 
 const gameMain = document.getElementById("gameMain");
@@ -57,48 +56,49 @@ const ctxBoard = board.getContext("2d");
 const boardOverlay = document.getElementById("boardOverlay");
 const ctxOverlay = boardOverlay.getContext("2d");
 
-let cellSize = ctxBoard.canvas.width / boardGameState.cellSizeRows;
-let cellGridSize = ctxBoard.canvas.width / boardGameState.gridSize;
-
 function updateCanvasSize() {
+  const boardSize = boardGameState.isFront
+    ? boardGameState.frontSizeRows * boardGameState.cellSize
+    : boardGameState.backSizeRows * boardGameState.cellSize;
+  console.log(boardSize);
+
+  board.width = boardSize;
+  board.height = boardSize;
+  boardOverlay.width = boardSize;
+  boardOverlay.height = boardSize;
+
   if (boardGameState.isFront) {
-    board.width = 800;
-    board.height = 800;
-    boardOverlay.width = 800;
-    boardOverlay.height = 800;
-    cellSize = board.width / boardGameState.cellSizeRows;
+    boardGameState.codeMargin = 0;
   } else {
-    const minCell = 70;
-    const size = boardGameState.gridSize * minCell;
-    board.width = size;
-    boardOverlay.width = size;
-    board.height = size;
-    boardOverlay.height = size;
-    cellGridSize = board.width / boardGameState.gridSize;
+    boardGameState.codeMargin = 80;
   }
-  drawAxes(board, cellSize);
+
+  drawLabels(board);
 }
 
 function renderBoard() {
   if (boardGameState.isFront) {
     drawBoard(ctxOverlay, ctxBoard, {
       isFront: boardGameState.isFront,
-      cellSize: cellSize,
-      gridSize: boardGameState.cellSizeRows,
       pieces: boardGameState.piecesFront,
+      codeRows: 0,
+      boardRows: boardGameState.frontSizeRows,
+      boardWidth: boardGameState.frontSizeRows * boardGameState.cellSize,
+      boardHeight: boardGameState.frontSizeRows * boardGameState.cellSize,
     });
   } else {
     drawBoard(ctxOverlay, ctxBoard, {
       isFront: boardGameState.isFront,
-      cellSize: cellGridSize,
-      gridSize: boardGameState.gridSize,
       pieces: boardGameState.piecesGrid,
+      codeRows: boardGameState.codeRows,
+      boardRows: boardGameState.backSizeRows,
+      boardWidth: boardGameState.backSizeRows * boardGameState.cellSize,
+      boardHeight:
+        boardGameState.codeMargin +
+        boardGameState.backSizeRows * boardGameState.cellSize +
+        boardGameState.codeRows * boardGameState.cellSize,
     });
   }
-}
-
-function drawImage(ctxBoard, img, size, x, y) {
-  drawCirclePiece(ctxBoard, x, y, size, boardGameState.dragging.color, img);
 }
 
 const boardHandlers = {
@@ -107,31 +107,29 @@ const boardHandlers = {
       ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
       return;
     }
-    const cellSizeDefalut = boardGameState.isFront ? cellSize : cellGridSize;
+    const cellSizeDefalut = boardGameState.cellSize;
     const { mx, my, c, r, x, y } = getMousePos(e, board, cellSizeDefalut);
     const {
       dragging,
-      cellSizeRows,
-      gridSize,
+      frontSizeRows,
+      backSizeRows,
       isFront,
       loadedImages,
       piecesFront,
       piecesGrid,
     } = boardGameState;
+
     dragging.x = mx;
     dragging.y = my;
 
     ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
-
     ctxOverlay.save();
 
-    const cells = isFront ? cellSizeRows : gridSize + 1;
+    const cells = isFront ? frontSizeRows : backSizeRows + 4;
 
     if (!boardGameState.isFront) {
-      const codeRows = 3;
-      const codeMargin = 70;
-      const boardHeight = boardGameState.gridSize * cellGridSize;
-      const codeStartY = boardHeight + codeMargin;
+      const boardHeight = boardGameState.backSizeRows * boardGameState.cellSize;
+      const codeStartY = boardHeight + boardGameState.codeMargin;
 
       const col = Math.floor(x / cellSizeDefalut);
       const row = Math.floor((y - codeStartY) / cellSizeDefalut);
@@ -139,7 +137,7 @@ const boardHandlers = {
       const isLockedCell =
         !boardGameState.isFront &&
         y >= codeStartY &&
-        y < codeStartY + codeRows * cellSizeDefalut &&
+        y < codeStartY + boardGameState.codeRows * cellSizeDefalut &&
         col === 0 &&
         row === 0;
 
@@ -155,18 +153,38 @@ const boardHandlers = {
     if (dragging.img) {
       const img = loadedImages[dragging.img];
       if (img) {
-        drawImage(ctxOverlay, img, cellSizeDefalut, mx, my);
+        drawCirclePiece(
+          ctxOverlay,
+          mx,
+          my,
+          cellSizeDefalut,
+          boardGameState.dragging.color,
+          img
+        );
       } else {
         getImage(dragging.img, (imgLoaded) => {
           loadedImages[dragging.img] = imgLoaded;
           renderBoard();
         });
-        drawImage(ctxOverlay, img, cellSizeDefalut, mx, my);
+        drawCirclePiece(
+          ctxOverlay,
+          mx,
+          my,
+          cellSizeDefalut,
+          boardGameState.dragging.color,
+          img
+        );
       }
     } else {
       if (!boardGameState.isFront && dragging.isPixel) {
-        const size = cellSizeDefalut;
-        drawSquarePiece(ctxOverlay, mx, my, size, dragging.color, null);
+        drawSquarePiece(
+          ctxOverlay,
+          mx,
+          my,
+          cellSizeDefalut,
+          dragging.color,
+          null
+        );
       } else {
         drawEmptyDisc(ctxOverlay, cellSizeDefalut, dragging);
       }
@@ -179,9 +197,17 @@ const boardHandlers = {
       board.style.cursor = "default";
     } else {
       if (r >= 0 && r < cells && c >= 0 && c < cells) {
-        const isLastRow = !isFront && r === gridSize;
+        const isLastRow = !isFront && r === backSizeRows;
         const isCodingDisc = !!dragging.isCodingDisc;
-        if (!boardGameState.isFront && !isLastRow && isCodingDisc) {
+        if (
+          !boardGameState.isFront &&
+          r >= 0 &&
+          r < cells - 3 &&
+          c >= 0 &&
+          c < cells - 3 &&
+          !isLastRow &&
+          isCodingDisc
+        ) {
           showMessage(
             "Krążki do kodowania można dodać tylko w sekcjach k1, k2, k3 !"
           );
@@ -225,21 +251,20 @@ const boardHandlers = {
   onMouseUp: (e) => {
     if (boardGameState.dragging) {
       ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
-      const cellSizeDefalut = boardGameState.isFront ? cellSize : cellGridSize;
 
-      const { x, y } = getMousePos(e, board, cellSizeDefalut);
+      const { x, y } = getMousePos(e, board, boardGameState.cellSize);
 
       const isCodingDisc = !!boardGameState.dragging.isCodingDisc;
-      const boardHeight = boardGameState.gridSize * cellGridSize;
-      const codeRows = 3;
+      const boardHeight = boardGameState.backSizeRows * boardGameState.cellSize;
+
       const codeStartY = boardGameState.isFront ? 0 : boardHeight + 70;
-      const col = Math.floor(x / cellSize);
-      const row = Math.floor((y - codeStartY) / cellSize);
+      const col = Math.floor(x / boardGameState.cellSize);
+      const row = Math.floor((y - codeStartY) / boardGameState.cellSize);
 
       const isLockedCell =
         !boardGameState.isFront &&
         y >= codeStartY &&
-        y < codeStartY + codeRows * cellSize &&
+        y < codeStartY + boardGameState.codeRows * boardGameState.cellSize &&
         col === 0 &&
         row === 0;
 
@@ -297,7 +322,10 @@ const boardHandlers = {
       }
 
       // Jeśli kliknięto w sekcję kodowania
-      if (y >= codeStartY && y < codeStartY + codeRows * cellSize) {
+      if (
+        y >= codeStartY &&
+        y < codeStartY + boardGameState.codeRows * boardGameState.cellSize
+      ) {
         if (
           !isOccupied(
             boardGameState.isFront,
@@ -339,7 +367,7 @@ const boardHandlers = {
     if (boardGameState.dragging) return;
 
     ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
-    const cellSizeDefalut = boardGameState.isFront ? cellSize : cellGridSize;
+    const cellSizeDefalut = boardGameState.cellSize;
 
     const { mx, my, x, y } = getMousePos(e, board, cellSizeDefalut);
 
@@ -377,9 +405,7 @@ const boardHandlers = {
   },
   onContextMenu: (e) => {
     e.preventDefault();
-
-    let cellSizeDefalut = boardGameState.isFront ? cellSize : cellGridSize;
-    const { x, y } = getMousePos(e, board, cellSizeDefalut);
+    const { x, y } = getMousePos(e, board, boardGameState.cellSize);
 
     const idxTable = boardGameState.isFront
       ? boardGameState.piecesFront
@@ -422,7 +448,7 @@ const uiHandlers = {
     renderBoard();
   },
   onGridSizeChange: (e) => {
-    boardGameState.gridSize = parseInt(e.target.value, 10);
+    boardGameState.backSizeRows = parseInt(e.target.value, 10);
     boardGameState.isFront
       ? (boardGameState.piecesFront.length = 0)
       : (boardGameState.piecesGrid.length = 0);
@@ -434,9 +460,10 @@ const uiHandlers = {
   },
   onDownloadCoords: () => {
     const coords = getCoordsList(
-      boardGameState.gridSize,
+      boardGameState.backSizeRows,
       board,
-      boardGameState.piecesGrid
+      boardGameState.piecesGrid,
+      boardGameState.codeMargin
     );
     if (coords.length === 0) {
       alert("Brak koordynatów do zapisania!");
