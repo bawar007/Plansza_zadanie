@@ -303,7 +303,15 @@ function pickFromList(item) {
   };
 }
 
-function drawAxes(ctx, sizeRows, codeRows, margin, cellSize, codeSectionY) {
+function drawAxes(
+  ctx,
+  sizeRows,
+  codeRows,
+  margin,
+  cellSize,
+  codeSectionY,
+  coordToPrint
+) {
   ctx.save();
   ctx.font = "bold 20px Arial";
   ctx.fillStyle = "#4a6792";
@@ -322,9 +330,11 @@ function drawAxes(ctx, sizeRows, codeRows, margin, cellSize, codeSectionY) {
     ctx.fillText((r + 1).toString(), 35, y);
   }
   // Oś Y (sekcja kodowania)
-  for (let r = 0; r < codeRows; r++) {
-    const y = margin + codeSectionY + r * cellSize + cellSize / 2 + 7;
-    ctx.fillText(`K${r + 1}`, 35, y);
+  if (!coordToPrint) {
+    for (let r = 0; r < codeRows; r++) {
+      const y = margin + codeSectionY + r * cellSize + cellSize / 2 + 7;
+      ctx.fillText(`K${r + 1}`, 35, y);
+    }
   }
   ctx.restore();
 }
@@ -399,16 +409,17 @@ function drawPicture(ctx, marginForAxesX, marginForAxesY, pieces) {
 }
 
 async function addCoordinatesToPdf(pdf, coordToPrint, pdfH, pdfW, imgH) {
-  let listY = 30 + imgH + 20; // początek pod planszą
+  let listY1 = 30 + imgH + 20; // początek pod planszą
+  let listY2 = 30 + imgH + 20; // początek pod planszą
   const iconSize = 16; // mm
   const pdfTextSize = 12;
   const maxListY = pdfH - 30; // dolny margines strony
   const colW = pdfW / 2; // szerokość jednej kolumny
   const iconX1 = 5; // lewa kolumna
-  const textX1 = iconX1 + iconSize + 5;
+  const textX1 = iconX1 + iconSize + 2;
   const iconX2 = colW + 5; // prawa kolumna
-  const textX2 = iconX2 + iconSize + 5;
-  const rowHeight = iconSize + 8; // wysokość bloku wiersza
+  const textX2 = iconX2 + iconSize + 2;
+  const rowHeight = iconSize + 1; // wysokość bloku wiersza
 
   for (let i = 0; i < coordToPrint.length; i += 2) {
     // --- LEWA KOLUMNA ---
@@ -426,22 +437,28 @@ async function addCoordinatesToPdf(pdf, coordToPrint, pdfH, pdfW, imgH) {
     }
 
     // Oblicz wysokość wiersza (najwyższa z obu kolumn)
-    const linesCount = Math.max(textLines1.length || 1, textLines2.length || 1);
-    const blockHeight = Math.max(
+    const linesCount1 = textLines1.length || 1;
+    const linesCount2 = textLines2.length || 1;
+    const blockHeight1 = Math.max(
       rowHeight,
-      iconSize + 6 + (linesCount - 1) * (pdfTextSize + 2)
+      iconSize + (linesCount1 - 1) * pdfTextSize * 0.5
+    );
+    const blockHeight2 = Math.max(
+      rowHeight,
+      iconSize + (linesCount2 - 1) * pdfTextSize * 0.5
     );
 
     // --- DODAJ NOWĄ STRONĘ JEŚLI NIE MIEŚCI SIĘ NA JEDNEJ ---
-    if (listY + blockHeight > maxListY) {
+    if (listY1 + blockHeight1 > maxListY || listY2 + blockHeight2 > maxListY) {
       pdf.addPage();
-      listY = 30; // nowa strona, margines od góry
+      listY1 = 30; // nowa strona, margines od góry
+      listY2 = 30; // nowa strona, margines od góry
     }
 
     // --- LEWA KOLUMNA: ikona + tekst ---
     if (group1) {
       const discImgData1 = await createDiscImage(group1.img, group1.color, 60);
-      pdf.addImage(discImgData1, "PNG", iconX1, listY, iconSize, iconSize);
+      pdf.addImage(discImgData1, "PNG", iconX1, listY1, iconSize, iconSize);
 
       pdf.setFontSize(pdfTextSize);
       pdf.setTextColor("#4a6792");
@@ -449,7 +466,7 @@ async function addCoordinatesToPdf(pdf, coordToPrint, pdfH, pdfW, imgH) {
         pdf.text(
           line,
           textX1,
-          listY - 1 + iconSize / 1.5 + idx * (pdfTextSize + 2)
+          listY1 - 1 + iconSize / 1.5 + idx * pdfTextSize * 0.5
         );
       });
     }
@@ -457,18 +474,19 @@ async function addCoordinatesToPdf(pdf, coordToPrint, pdfH, pdfW, imgH) {
     // --- PRAWA KOLUMNA: ikona + tekst ---
     if (group2) {
       const discImgData2 = await createDiscImage(group2.img, group2.color, 60);
-      pdf.addImage(discImgData2, "PNG", iconX2, listY, iconSize, iconSize);
+      pdf.addImage(discImgData2, "PNG", iconX2, listY2, iconSize, iconSize);
       pdf.setFontSize(pdfTextSize);
       pdf.setTextColor("#4a6792");
       textLines2.forEach((line, idx) => {
         pdf.text(
           line,
           textX2,
-          listY - 1 + iconSize / 1.5 + idx * (pdfTextSize + 2)
+          listY2 - 1 + iconSize / 1.5 + idx * pdfTextSize * 0.5
         );
       });
     }
-    listY += blockHeight;
+    listY1 += blockHeight1;
+    listY2 += blockHeight2;
   }
 }
 
@@ -481,7 +499,9 @@ export async function drawPdfFile(coordToPrint) {
 
   const codeRows = boardGameState.codeRows;
   const boardWidth = sizeRows * boardGameState.cellSize;
-  const boardHeight = sizeRows * boardGameState.cellSize;
+  const boardHeight = coordToPrint
+    ? (sizeRows - 4) * boardGameState.cellSize
+    : sizeRows * boardGameState.cellSize;
   const codeSectionY = boardHeight + boardGameState.codeMargin;
   const codeSectionHeight = codeRows * boardGameState.cellSize;
   const marginForAxes = !isFront ? 40 : 0;
@@ -502,7 +522,8 @@ export async function drawPdfFile(coordToPrint) {
       codeRows,
       marginForAxes,
       boardGameState.cellSize,
-      codeSectionY
+      codeSectionY,
+      coordToPrint
     );
   }
 
@@ -514,16 +535,52 @@ export async function drawPdfFile(coordToPrint) {
     marginForAxes,
     isFront
   );
+  if (isFront) {
+    // --- RAMKA WOKÓŁ SIATKI ---
+    tmpCtx.save();
+    tmpCtx.lineWidth = 2;
+    tmpCtx.strokeStyle = "#000";
+    tmpCtx.strokeRect(marginForAxes, marginForAxes, boardWidth, boardHeight);
+    tmpCtx.restore();
+  }
+  if (!isFront) {
+    // --- Linie przez środek planszy (tylko dla back) ---
+    tmpCtx.save();
+    tmpCtx.strokeStyle = "#ff0000";
+    tmpCtx.lineWidth = 2;
 
-  // --- RAMKA WOKÓŁ SIATKI ---
-  tmpCtx.save();
-  tmpCtx.lineWidth = 2;
-  tmpCtx.strokeStyle = "#000";
-  tmpCtx.strokeRect(marginForAxes, marginForAxes, boardWidth, boardHeight);
-  tmpCtx.restore();
+    const midCol = sizeRows / 2;
+    const midRow = sizeRows / 2;
+
+    // pionowa linia przez środek
+    tmpCtx.beginPath();
+    tmpCtx.moveTo(
+      midCol * boardGameState.cellSize + marginForAxes,
+      marginForAxes
+    );
+    tmpCtx.lineTo(
+      midCol * boardGameState.cellSize + marginForAxes,
+      sizeRows * boardGameState.cellSize + marginForAxes
+    );
+    tmpCtx.stroke();
+
+    // pozioma linia przez środek
+    tmpCtx.beginPath();
+    tmpCtx.moveTo(
+      marginForAxes,
+      midRow * boardGameState.cellSize + marginForAxes
+    );
+    tmpCtx.lineTo(
+      boardWidth + marginForAxes,
+      midRow * boardGameState.cellSize + 40
+    );
+    tmpCtx.stroke();
+
+    tmpCtx.restore();
+  }
 
   // --- RYSOWANIE SEKCJI KODOWANIA (tylko back) ---
-  if (!isFront) {
+  if (!isFront && !coordToPrint) {
     drawCodeGrid(
       tmpCtx,
       codeRows,
@@ -631,7 +688,7 @@ export async function createDiscImage(img, color, size = 60) {
       drawCirclePiece(ctx, size / 2, size / 2, size, color, loadedImg);
     }
   } else {
-    drawSquarePiece(ctx, size / 2, size / 2, size, color);
+    drawSquarePiece(ctx, size / 2, size / 2, size * 0.8, color);
   }
   return canvas.toDataURL("image/png");
 }
