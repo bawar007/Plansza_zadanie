@@ -448,7 +448,6 @@ const uiHandlers = {
 
 function initGame() {
   drawPicker();
-  //drawPalette();
   registerBoardEvents(board, boardHandlers);
   registerUIEvents(uiHandlers);
   renderBoard();
