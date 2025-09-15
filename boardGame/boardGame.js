@@ -101,10 +101,58 @@ function renderBoard() {
   }
 }
 
+const SCROLL_EDGE = 200;
+const SCROLL_STEP = 5;
+let scrollDirectionX = 0;
+let scrollDirectionY = 0;
+let scrollAnimFrame = null;
+let isDraggingBoard = false;
+let dragStartX = 0;
+let scrollStartX = 0;
+
+function smoothScrollBoard() {
+  if (scrollDirectionX !== 0 || scrollDirectionY !== 0) {
+    let newScrollX = boardWrapper.scrollLeft + scrollDirectionX * SCROLL_STEP;
+    let newScrollY = boardWrapper.scrollTop + scrollDirectionY * SCROLL_STEP;
+    newScrollX = Math.max(
+      0,
+      Math.min(newScrollX, boardWrapper.scrollWidth - boardWrapper.clientWidth)
+    );
+    newScrollY = Math.max(
+      0,
+      Math.min(
+        newScrollY,
+        boardWrapper.scrollHeight - boardWrapper.clientHeight
+      )
+    );
+    boardWrapper.scrollLeft = newScrollX;
+    scrollAnimFrame = requestAnimationFrame(smoothScrollBoard);
+  }
+}
+
 const boardHandlers = {
   onMouseMove: (e) => {
     const cellSizeDefalut = boardGameState.cellSize;
     const { mx, my, c, r, x, y } = getMousePos(e, board, cellSizeDefalut);
+
+    // --- Płynne auto-scroll zawsze gdy kursor blisko krawędzi ---
+    const wrapperRect = boardWrapper.getBoundingClientRect();
+    scrollDirectionX = 0;
+    if (e.clientX - wrapperRect.left < SCROLL_EDGE) {
+      scrollDirectionX = -1;
+    } else if (wrapperRect.right - e.clientX < SCROLL_EDGE) {
+      scrollDirectionX = 1;
+    }
+
+    if (scrollDirectionX !== 0) {
+      if (!scrollAnimFrame)
+        scrollAnimFrame = requestAnimationFrame(smoothScrollBoard);
+    } else {
+      if (scrollAnimFrame) {
+        cancelAnimationFrame(scrollAnimFrame);
+        scrollAnimFrame = null;
+      }
+    }
 
     // Gumka: usuwanie pikseli podczas przesuwania myszy
     if (boardGameState.isErasing && !boardGameState.isFront) {
@@ -304,6 +352,18 @@ const boardHandlers = {
     }
   },
   onMouseLeave: (e) => {
+    if (boardGameState.isPainting) {
+      boardGameState.isPainting = false;
+      boardGameState.paintColor = null;
+      board.style.cursor = "default";
+      showMessage("");
+    }
+    if (boardGameState.isErasing) {
+      boardGameState.isErasing = false;
+      boardGameState.dragging = null;
+      board.style.cursor = "default";
+      showMessage("");
+    }
     if (boardGameState.dragging) {
       ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
       if (boardGameState.isFront) {
@@ -664,3 +724,33 @@ function initGame() {
 }
 
 initGame();
+
+// Drag-to-scroll dla planszy (myszą)
+boardWrapper.addEventListener("mousedown", function (e) {
+  if (e.button !== 0 || e.target.id === "yAxis") return;
+  isDraggingBoard = true;
+  dragStartX = e.clientX;
+  scrollStartX = boardWrapper.scrollLeft;
+});
+
+window.addEventListener("mousemove", function (e) {
+  if (!isDraggingBoard) return;
+  const dx = dragStartX - e.clientX;
+  boardWrapper.scrollLeft = scrollStartX + dx;
+});
+
+window.addEventListener("mouseup", function (e) {
+  if (isDraggingBoard) {
+    isDraggingBoard = false;
+    boardWrapper.style.cursor = "default";
+  }
+});
+
+// Zatrzymaj animację scrolla przy opuszczeniu planszy
+board.addEventListener("mouseleave", () => {
+  scrollDirectionX = 0;
+  if (scrollAnimFrame) {
+    cancelAnimationFrame(scrollAnimFrame);
+    scrollAnimFrame = null;
+  }
+});
