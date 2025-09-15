@@ -40,6 +40,7 @@ gameMain.innerHTML = `
       <option value="18">18 x 18</option>
       <option value="20">20 x 20</option>
     </select>
+    <button id="switchBoard">Mata 50x50</button>
     <button id="clearBoard">Wyczyść stronę</button>
     <button id="flipBoard">Obróć matę</button>
     <button id="downloadBoardPdf">Pobierz jako PDF</button>
@@ -85,31 +86,42 @@ function updateCanvasSize() {
 }
 
 function renderBoard() {
-  if (boardGameState.isFront) {
+  if (boardGameState.isBoard50x50) {
     drawBoard(ctxOverlay, ctxBoard, {
-      isFront: boardGameState.isFront,
-      pieces: boardGameState.piecesFront,
+      isFront: false,
+      pieces: boardGameState.pieces50x50,
       codeRows: 0,
-      boardRows: boardGameState.frontSizeRows,
-      boardWidth: boardGameState.frontSizeRows * boardGameState.cellSize,
-      boardHeight: boardGameState.frontSizeRows * boardGameState.cellSize,
+      boardRows: 5,
+      boardWidth: 5 * 100,
+      boardHeight: 5 * 100,
     });
-    board.style.border = "2px solid #000";
-    boardWrapper.style.alignItems = "center";
   } else {
-    drawBoard(ctxOverlay, ctxBoard, {
-      isFront: boardGameState.isFront,
-      pieces: boardGameState.piecesGrid,
-      codeRows: boardGameState.codeRows,
-      boardRows: boardGameState.backSizeRows,
-      boardWidth: boardGameState.backSizeRows * boardGameState.cellSize,
-      boardHeight:
-        boardGameState.codeMargin +
-        boardGameState.backSizeRows * boardGameState.cellSize +
-        boardGameState.codeRows * boardGameState.cellSize,
-    });
-    board.style.border = "none";
-    boardWrapper.style.alignItems = "flex-start";
+    if (boardGameState.isFront) {
+      drawBoard(ctxOverlay, ctxBoard, {
+        isFront: boardGameState.isFront,
+        pieces: boardGameState.piecesFront,
+        codeRows: 0,
+        boardRows: boardGameState.frontSizeRows,
+        boardWidth: boardGameState.frontSizeRows * boardGameState.cellSize,
+        boardHeight: boardGameState.frontSizeRows * boardGameState.cellSize,
+      });
+      board.style.border = "2px solid #000";
+      boardWrapper.style.alignItems = "center";
+    } else {
+      drawBoard(ctxOverlay, ctxBoard, {
+        isFront: boardGameState.isFront,
+        pieces: boardGameState.piecesGrid,
+        codeRows: boardGameState.codeRows,
+        boardRows: boardGameState.backSizeRows,
+        boardWidth: boardGameState.backSizeRows * boardGameState.cellSize,
+        boardHeight:
+          boardGameState.codeMargin +
+          boardGameState.backSizeRows * boardGameState.cellSize +
+          boardGameState.codeRows * boardGameState.cellSize,
+      });
+      board.style.border = "none";
+      boardWrapper.style.alignItems = "flex-start";
+    }
   }
 }
 
@@ -117,7 +129,6 @@ function renderBoard() {
 let isDraggingBoard = false;
 let dragStartX = 0;
 let scrollStartX = 0;
-
 let isTouchDraggingBoard = false;
 let touchStartX = 0;
 let touchStartY = 0;
@@ -899,3 +910,14 @@ function initGame() {
 }
 
 initGame();
+
+document.getElementById("switchBoard").addEventListener("click", () => {
+  if (boardGameState.isBoard50x50) {
+    boardGameState.isBoard50x50 = false;
+    document.getElementById("switchBoard").innerText = "Mata 50x50";
+  } else {
+    boardGameState.isBoard50x50 = true;
+    document.getElementById("switchBoard").innerText = "Mata 100x100";
+  }
+  renderBoard();
+});

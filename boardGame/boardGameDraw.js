@@ -26,77 +26,81 @@ export function drawBoard(ctxOverlay, ctxBoard, options) {
   ctxBoard.clearRect(0, 0, ctxBoard.canvas.width, ctxBoard.canvas.height);
   ctxOverlay.clearRect(0, 0, ctxOverlay.canvas.width, ctxOverlay.canvas.height);
 
-  drawGrid(ctxBoard, boardRows, boardRows, boardGameState.cellSize, 0, isFront);
+  const cellSize = boardGameState.isBoard50x50 ? 100 : boardGameState.cellSize;
 
-  if (!isFront) {
-    drawCodeGrid(
-      ctxBoard,
-      boardGameState.codeRows,
-      boardRows,
-      boardGameState.cellSize,
-      null,
-      false,
-      codeSectionY,
-      0
-    );
-    const circleX = 0 * boardGameState.cellSize + boardGameState.cellSize / 2;
-    const circleY =
-      boardRows * boardGameState.cellSize +
-      boardGameState.codeMargin +
-      0 * boardGameState.cellSize +
-      boardGameState.cellSize / 2;
-    if (boardGameState.lockedImg) {
-      drawCirclePiece(
+  drawGrid(ctxBoard, boardRows, boardRows, cellSize, 0, isFront);
+
+  if (boardGameState.isBoard50x50) {
+  } else {
+    if (!isFront) {
+      drawCodeGrid(
         ctxBoard,
-        circleX,
-        circleY,
+        boardGameState.codeRows,
+        boardRows,
         boardGameState.cellSize,
-        "#4466b0",
-        boardGameState.lockedImg
+        null,
+        false,
+        codeSectionY,
+        0
       );
-    } else {
-      const newLockedImg = new window.Image();
-      newLockedImg.src = "../assets/symbole_do_kodowania/img4.png";
-      newLockedImg.onload = function () {
-        boardGameState.lockedImg = newLockedImg;
-
+      const circleX = 0 * boardGameState.cellSize + boardGameState.cellSize / 2;
+      const circleY =
+        boardRows * boardGameState.cellSize +
+        boardGameState.codeMargin +
+        0 * boardGameState.cellSize +
+        boardGameState.cellSize / 2;
+      if (boardGameState.lockedImg) {
         drawCirclePiece(
           ctxBoard,
           circleX,
           circleY,
           boardGameState.cellSize,
           "#4466b0",
-          newLockedImg
+          boardGameState.lockedImg
         );
-      };
+      } else {
+        const newLockedImg = new window.Image();
+        newLockedImg.src = "../assets/symbole_do_kodowania/img4.png";
+        newLockedImg.onload = function () {
+          boardGameState.lockedImg = newLockedImg;
+
+          drawCirclePiece(
+            ctxBoard,
+            circleX,
+            circleY,
+            boardGameState.cellSize,
+            "#4466b0",
+            newLockedImg
+          );
+        };
+      }
+
+      // --- Linie przez środek planszy (tylko dla back) ---
+      ctxBoard.save();
+      ctxBoard.strokeStyle = "#ff0000";
+      ctxBoard.lineWidth = 2;
+
+      const midCol = boardRows / 2;
+      const midRow = boardRows / 2;
+
+      // pionowa linia przez środek
+      ctxBoard.beginPath();
+      ctxBoard.moveTo(midCol * boardGameState.cellSize, 0);
+      ctxBoard.lineTo(
+        midCol * boardGameState.cellSize,
+        boardHeight - 4 * boardGameState.cellSize
+      );
+      ctxBoard.stroke();
+
+      // pozioma linia przez środek
+      ctxBoard.beginPath();
+      ctxBoard.moveTo(0, midRow * boardGameState.cellSize);
+      ctxBoard.lineTo(boardWidth, midRow * boardGameState.cellSize);
+      ctxBoard.stroke();
+
+      ctxBoard.restore();
     }
-
-    // --- Linie przez środek planszy (tylko dla back) ---
-    ctxBoard.save();
-    ctxBoard.strokeStyle = "#ff0000";
-    ctxBoard.lineWidth = 2;
-
-    const midCol = boardRows / 2;
-    const midRow = boardRows / 2;
-
-    // pionowa linia przez środek
-    ctxBoard.beginPath();
-    ctxBoard.moveTo(midCol * boardGameState.cellSize, 0);
-    ctxBoard.lineTo(
-      midCol * boardGameState.cellSize,
-      boardHeight - 4 * boardGameState.cellSize
-    );
-    ctxBoard.stroke();
-
-    // pozioma linia przez środek
-    ctxBoard.beginPath();
-    ctxBoard.moveTo(0, midRow * boardGameState.cellSize);
-    ctxBoard.lineTo(boardWidth, midRow * boardGameState.cellSize);
-    ctxBoard.stroke();
-
-    ctxBoard.restore();
   }
-
   drawPicture(ctxBoard, 0, 0, pieces);
 }
 
@@ -413,21 +417,7 @@ function drawCodeGrid(
 }
 
 function drawPicture(ctx, marginForAxesX, marginForAxesY, pieces) {
-  if (boardGameState.isFront) {
-    // Na stronie front: wszystkie elementy jako krążki
-    for (let p of pieces) {
-      const img = p.img ? boardGameState.loadedImages[p.img] : null;
-      drawCirclePiece(
-        ctx,
-        p.x + marginForAxesX,
-        p.y + marginForAxesY,
-        boardGameState.cellSize,
-        p.color,
-        img
-      );
-    }
-  } else {
-    // Na stronie back najpierw piksele, potem krążki
+  if (boardGameState.isBoard50x50) {
     for (let p of pieces) {
       if (!p.isPixel) continue;
       const img = p.img ? boardGameState.loadedImages[p.img] : null;
@@ -451,6 +441,47 @@ function drawPicture(ctx, marginForAxesX, marginForAxesY, pieces) {
         p.color,
         img
       );
+    }
+  } else {
+    if (boardGameState.isFront) {
+      // Na stronie front: wszystkie elementy jako krążki
+      for (let p of pieces) {
+        const img = p.img ? boardGameState.loadedImages[p.img] : null;
+        drawCirclePiece(
+          ctx,
+          p.x + marginForAxesX,
+          p.y + marginForAxesY,
+          boardGameState.cellSize,
+          p.color,
+          img
+        );
+      }
+    } else {
+      // Na stronie back najpierw piksele, potem krążki
+      for (let p of pieces) {
+        if (!p.isPixel) continue;
+        const img = p.img ? boardGameState.loadedImages[p.img] : null;
+        drawSquarePiece(
+          ctx,
+          p.x + marginForAxesX,
+          p.y + marginForAxesY,
+          boardGameState.cellSize,
+          p.color,
+          img
+        );
+      }
+      for (let p of pieces) {
+        if (p.isPixel) continue;
+        const img = p.img ? boardGameState.loadedImages[p.img] : null;
+        drawCirclePiece(
+          ctx,
+          p.x + marginForAxesX,
+          p.y + marginForAxesY,
+          boardGameState.cellSize,
+          p.color,
+          img
+        );
+      }
     }
   }
 }

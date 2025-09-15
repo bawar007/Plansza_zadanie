@@ -8,9 +8,11 @@ export const boardGameState = {
   loadedImages: {},
   piecesFront: [],
   piecesGrid: [],
+  pieces50x50: [],
   lockedImg: null,
   codeRows: 3,
   codeMargin: 0,
   isPainting: false,
   paintColor: null,
+  isBoard50x50: false,
 };
