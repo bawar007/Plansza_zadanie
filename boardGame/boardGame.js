@@ -754,3 +754,232 @@ board.addEventListener("mouseleave", () => {
     scrollAnimFrame = null;
   }
 });
+
+// Obsługa dotyku dla mobilnych
+let isTouchDraggingBoard = false;
+let touchStartX = 0;
+let touchStartY = 0;
+let touchScrollStartX = 0;
+let touchScrollStartY = 0;
+let isTouchPainting = false;
+let isTouchErasing = false;
+let touchDraggingPiece = null;
+
+boardWrapper.addEventListener(
+  "touchstart",
+  function (e) {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    isTouchDraggingBoard = true;
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchScrollStartX = boardWrapper.scrollLeft;
+    touchScrollStartY = boardWrapper.scrollTop;
+    boardWrapper.style.cursor = "grab";
+  },
+  { passive: false }
+);
+
+boardWrapper.addEventListener(
+  "touchmove",
+  function (e) {
+    if (!isTouchDraggingBoard || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const dx = touchStartX - touch.clientX;
+    const dy = touchStartY - touch.clientY;
+    boardWrapper.scrollLeft = touchScrollStartX + dx;
+    boardWrapper.scrollTop = touchScrollStartY + dy;
+    e.preventDefault();
+  },
+  { passive: false }
+);
+
+boardWrapper.addEventListener(
+  "touchend",
+  function (e) {
+    isTouchDraggingBoard = false;
+    boardWrapper.style.cursor = "default";
+  },
+  { passive: false }
+);
+
+// Obsługa tap/long tap na planszy
+let touchTimer = null;
+let touchMoved = false;
+let touchStartBoardX = 0;
+let touchStartBoardY = 0;
+
+function getTouchPos(e, board, cellSize) {
+  const touch = e.touches?.[0] || e.changedTouches?.[0];
+  if (!touch) return { x: 0, y: 0 };
+  const rect = board.getBoundingClientRect();
+  const x = touch.clientX - rect.left;
+  const y = touch.clientY - rect.top;
+  return { x, y };
+}
+
+board.addEventListener(
+  "touchstart",
+  function (e) {
+    if (e.touches.length !== 1) return;
+    touchMoved = false;
+    const touch = e.touches[0];
+    touchStartBoardX = touch.clientX;
+    touchStartBoardY = touch.clientY;
+    // Sprawdź czy dotyk jest na elemencie do przeciągnięcia
+    const { x, y } = getTouchPos(e, board, boardGameState.cellSize);
+    let idxTable = boardGameState.isFront
+      ? boardGameState.piecesFront
+      : boardGameState.piecesGrid;
+    let idx = idxTable.findIndex(
+      (p) =>
+        Math.abs(p.x - x) < 5 &&
+        Math.abs(p.y - y) < 5 &&
+        (boardGameState.isFront || !p.isPixel)
+    );
+    if (idx !== -1) {
+      touchDraggingPiece = {
+        ...idxTable[idx],
+        prevX: idxTable[idx].x,
+        prevY: idxTable[idx].y,
+      };
+      idxTable.splice(idx, 1);
+    } else {
+      touchDraggingPiece = null;
+    }
+    touchTimer = setTimeout(() => {
+      // Long tap: aktywuj gumkę
+      isTouchErasing = true;
+      showMessage("Tryb gumki aktywny (dotyk)");
+    }, 500);
+  },
+  { passive: false }
+);
+
+board.addEventListener(
+  "touchmove",
+  function (e) {
+    touchMoved = true;
+    if (touchTimer) {
+      clearTimeout(touchTimer);
+      touchTimer = null;
+    }
+    const touch = e.touches[0];
+    const { x, y } = getTouchPos(e, board, boardGameState.cellSize);
+    if (isTouchErasing) {
+      // Gumka: usuwanie pikseli
+      let idx = boardGameState.piecesGrid.findIndex(
+        (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
+      );
+      if (idx !== -1) {
+        boardGameState.piecesGrid.splice(idx, 1);
+        renderBoard();
+      }
+      e.preventDefault();
+      return;
+    }
+    if (touchDraggingPiece) {
+      // Przeciąganie krążka/piksela
+      touchDraggingPiece.x = x;
+      touchDraggingPiece.y = y;
+      ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
+      if (touchDraggingPiece.img) {
+        const img = boardGameState.loadedImages[touchDraggingPiece.img];
+        drawCirclePiece(
+          ctxOverlay,
+          x,
+          y,
+          boardGameState.cellSize,
+          touchDraggingPiece.color,
+          img
+        );
+      } else if (touchDraggingPiece.isPixel) {
+        drawSquarePiece(
+          ctxOverlay,
+          x,
+          y,
+          boardGameState.cellSize,
+          touchDraggingPiece.color,
+          null
+        );
+      } else {
+        drawEmptyDisc(ctxOverlay, boardGameState.cellSize, touchDraggingPiece);
+      }
+      e.preventDefault();
+      return;
+    }
+    // Malowanie pikseli (dotyk)
+    if (!boardGameState.isFront && boardGameState.paintColor) {
+      if (
+        addPixelAt(
+          x,
+          y,
+          boardGameState.paintColor,
+          boardGameState.isFront,
+          boardGameState.piecesFront,
+          boardGameState.piecesGrid
+        )
+      ) {
+        renderBoard();
+      }
+      e.preventDefault();
+      return;
+    }
+  },
+  { passive: false }
+);
+
+board.addEventListener(
+  "touchend",
+  function (e) {
+    if (touchTimer) {
+      clearTimeout(touchTimer);
+      touchTimer = null;
+    }
+    if (isTouchErasing) {
+      isTouchErasing = false;
+      showMessage("");
+    }
+    if (touchDraggingPiece) {
+      // Przypisz do najbliższego pola (snap do siatki) z uwzględnieniem scrolla
+      const { x, y } = getTouchPos(e, board, boardGameState.cellSize);
+      let idxTable = boardGameState.isFront
+        ? boardGameState.piecesFront
+        : boardGameState.piecesGrid;
+      // Oblicz najbliższe pole
+      const cellSize = boardGameState.cellSize;
+      const col = Math.floor(x / boardGameState.cellSize);
+      const row = Math.floor(y / boardGameState.cellSize);
+      const snapX = col * cellSize;
+      const snapY = row * cellSize;
+      // Sprawdź czy miejsce jest zajęte lub zablokowane
+      const isBlocked = isOccupied(
+        boardGameState.isFront,
+        snapX + boardGameState.cellSize / 2,
+        snapY + boardGameState.cellSize / 2,
+        boardGameState.piecesFront,
+        boardGameState.piecesGrid
+      );
+      if (!isBlocked) {
+        touchDraggingPiece.x = snapX + boardGameState.cellSize / 2;
+        touchDraggingPiece.y = snapY + boardGameState.cellSize / 2;
+        idxTable.push(touchDraggingPiece);
+      } else {
+        showMessage("To miejsce jest zajęte!");
+        // Przywróć element na stare miejsce
+        if (
+          touchDraggingPiece.prevX !== undefined &&
+          touchDraggingPiece.prevY !== undefined
+        ) {
+          touchDraggingPiece.x = touchDraggingPiece.prevX;
+          touchDraggingPiece.y = touchDraggingPiece.prevY;
+        }
+        idxTable.push(touchDraggingPiece);
+      }
+      touchDraggingPiece = null;
+      ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
+      renderBoard();
+    }
+  },
+  { passive: false }
+);
