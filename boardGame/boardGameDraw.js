@@ -462,84 +462,145 @@ function drawPicture(ctx, marginForAxesX, marginForAxesY, pieces) {
 }
 
 async function addCoordinatesToPdf(pdf, coordToPrint, pdfH, pdfW, imgH) {
-  let listY1 = 30 + imgH + 20; // początek pod planszą
-  let listY2 = 30 + imgH + 20; // początek pod planszą
-  const iconSize = 16; // mm
-  const pdfTextSize = 12;
-  const maxListY = pdfH - 30; // dolny margines strony
+  const startY = 30 + imgH + 20; // początek pod kratownicą
+  const iconSize = 14; // mm
+  const pdfTextSize = 10;
+  const maxListY = pdfH - 5; // dolny margines strony
   const colW = pdfW / 2; // szerokość jednej kolumny
   const iconX1 = 5; // lewa kolumna
   const textX1 = iconX1 + iconSize + 2;
   const iconX2 = colW + 5; // prawa kolumna
   const textX2 = iconX2 + iconSize + 2;
-  const rowHeight = iconSize + 1; // wysokość bloku wiersza
+  const rowHeight = iconSize + 1; // minimalna wysokość elementu
 
+  // --- LEWA KOLUMNA ---
+  let currentY1 = startY;
   for (let i = 0; i < coordToPrint.length; i += 2) {
-    // --- LEWA KOLUMNA ---
     const group1 = coordToPrint[i];
-    let textLines1 = [];
-    if (group1) {
-      textLines1 = wrapText(pdf, group1.coords, colW - iconSize - 15);
-    }
-
-    // --- PRAWA KOLUMNA ---
-    const group2 = coordToPrint[i + 1];
-    let textLines2 = [];
-    if (group2) {
-      textLines2 = wrapText(pdf, group2.coords, colW - iconSize - 15);
-    }
-
-    // Oblicz wysokość wiersza (najwyższa z obu kolumn)
-    const linesCount1 = textLines1.length || 1;
-    const linesCount2 = textLines2.length || 1;
-    const blockHeight1 = Math.max(
-      rowHeight,
-      iconSize + (linesCount1 - 1) * pdfTextSize * 0.5
-    );
-    const blockHeight2 = Math.max(
-      rowHeight,
-      iconSize + (linesCount2 - 1) * pdfTextSize * 0.5
-    );
-
-    // --- DODAJ NOWĄ STRONĘ JEŚLI NIE MIEŚCI SIĘ NA JEDNEJ ---
-    if (listY1 + blockHeight1 > maxListY || listY2 + blockHeight2 > maxListY) {
-      pdf.addPage();
-      listY1 = 30; // nowa strona, margines od góry
-      listY2 = 30; // nowa strona, margines od góry
-    }
-
-    // --- LEWA KOLUMNA: ikona + tekst ---
-    if (group1) {
-      const discImgData1 = await createDiscImage(group1.img, group1.color, 60);
-      pdf.addImage(discImgData1, "PNG", iconX1, listY1, iconSize, iconSize);
-
+    let textLines1 = group1
+      ? wrapText(pdf, group1.coords, colW - iconSize - 15)
+      : [];
+    let idx1 = 0;
+    let firstPage1 = true;
+    while (idx1 < textLines1.length) {
+      let maxLines1 = firstPage1
+        ? Math.floor(
+            (maxListY - currentY1 - iconSize / 1.5) / (pdfTextSize * 0.5)
+          )
+        : Math.floor((maxListY - currentY1) / (pdfTextSize * 0.5));
+      if (maxLines1 < 1) {
+        pdf.addPage();
+        currentY1 = 30;
+        firstPage1 = false;
+        continue;
+      }
+      let linesLeft1 = textLines1.length - idx1;
+      let linesToDraw1 = Math.max(1, Math.min(linesLeft1, maxLines1));
+      if (firstPage1 && group1) {
+        const discImgData1 = await createDiscImage(
+          group1.img,
+          group1.color,
+          60
+        );
+        pdf.addImage(
+          discImgData1,
+          "PNG",
+          iconX1,
+          currentY1,
+          iconSize,
+          iconSize
+        );
+      }
       pdf.setFontSize(pdfTextSize);
       pdf.setTextColor("#4a6792");
-      textLines1.forEach((line, idx) => {
+      for (let l = 0; l < linesToDraw1; l++) {
         pdf.text(
-          line,
+          textLines1[idx1 + l],
           textX1,
-          listY1 - 1 + iconSize / 1.5 + idx * pdfTextSize * 0.5
+          currentY1 -
+            1 +
+            (firstPage1 ? iconSize / 1.5 : 0) +
+            l * pdfTextSize * 0.5
         );
-      });
+      }
+      currentY1 +=
+        Math.max(
+          rowHeight,
+          (firstPage1 ? iconSize : 0) + (linesToDraw1 - 1) * pdfTextSize * 0.5
+        ) + 2;
+      idx1 += linesToDraw1;
+      firstPage1 = false;
     }
+  }
 
-    // --- PRAWA KOLUMNA: ikona + tekst ---
-    if (group2) {
-      const discImgData2 = await createDiscImage(group2.img, group2.color, 60);
-      pdf.addImage(discImgData2, "PNG", iconX2, listY2, iconSize, iconSize);
+  // --- PRAWA KOLUMNA ---
+  if (pdf.setPage) pdf.setPage(1); // jsPDF >=2.0
+  let pageNum = 1;
+  let currentY2 = startY;
+  for (let i = 0; i < coordToPrint.length; i += 2) {
+    const group2 = coordToPrint[i + 1];
+    let textLines2 = group2
+      ? wrapText(pdf, group2.coords, colW - iconSize - 15)
+      : [];
+    let idx2 = 0;
+    let firstPage2 = true;
+    while (idx2 < textLines2.length) {
+      let maxLines2 = firstPage2
+        ? Math.floor(
+            (maxListY - currentY2 - iconSize / 1.5) / (pdfTextSize * 0.5)
+          )
+        : Math.floor((maxListY - currentY2) / (pdfTextSize * 0.5));
+      if (maxLines2 < 1) {
+        // Sprawdź czy kolejna strona już istnieje
+        if (pageNum < pdf.getNumberOfPages()) {
+          pageNum++;
+          if (pdf.setPage) pdf.setPage(pageNum);
+        } else {
+          pdf.addPage();
+          pageNum++;
+          if (pdf.setPage) pdf.setPage(pageNum);
+        }
+        currentY2 = 30;
+        firstPage2 = false;
+        continue;
+      }
+      let linesLeft2 = textLines2.length - idx2;
+      let linesToDraw2 = Math.max(1, Math.min(linesLeft2, maxLines2));
+      if (firstPage2 && group2) {
+        const discImgData2 = await createDiscImage(
+          group2.img,
+          group2.color,
+          60
+        );
+        pdf.addImage(
+          discImgData2,
+          "PNG",
+          iconX2,
+          currentY2,
+          iconSize,
+          iconSize
+        );
+      }
       pdf.setFontSize(pdfTextSize);
       pdf.setTextColor("#4a6792");
-      textLines2.forEach((line, idx) => {
+      for (let l = 0; l < linesToDraw2; l++) {
         pdf.text(
-          line,
+          textLines2[idx2 + l],
           textX2,
-          listY2 - 1 + iconSize / 1.5 + idx * pdfTextSize * 0.5
+          currentY2 -
+            1 +
+            (firstPage2 ? iconSize / 1.5 : 0) +
+            l * pdfTextSize * 0.5
         );
-      });
+      }
+      currentY2 +=
+        Math.max(
+          rowHeight,
+          (firstPage2 ? iconSize : 0) + (linesToDraw2 - 1) * pdfTextSize * 0.5
+        ) + 2;
+      idx2 += linesToDraw2;
+      firstPage2 = false;
     }
-    listY1 += blockHeight1;
-    listY2 += blockHeight2;
   }
 }
 
