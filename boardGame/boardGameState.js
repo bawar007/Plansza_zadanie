@@ -11,4 +11,6 @@ export const boardGameState = {
   lockedImg: null,
   codeRows: 3,
   codeMargin: 0,
+  isPainting: false,
+  paintColor: null,
 };

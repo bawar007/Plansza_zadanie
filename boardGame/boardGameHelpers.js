@@ -1,11 +1,14 @@
+import { boardGameState } from "./boardGameState.js";
 export function isOccupied(isFront, x, y, piecesFront, piecesGrid) {
   if (isFront) {
+    // Na przedniej stronie wszystkie elementy (krążki + piksele) blokują
     return piecesFront.some(
-      (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5
+      (p) => Math.abs(p.x - x) < 3 && Math.abs(p.y - y) < 3
     );
   } else {
+    // Na tylnej stronie tylko krążki blokują (piksele są w tle)
     return piecesGrid.some(
-      (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && !p.isPixel
+      (p) => Math.abs(p.x - x) < 3 && Math.abs(p.y - y) < 3 && !p.isPixel
     );
   }
 }
@@ -52,7 +55,6 @@ export function getCoordsList(backSizeRows, board, pieces, codeMargin) {
   const cellSize = board.width / backSizeRows;
   const boardHeight = backSizeRows * cellSize;
 
-  // Grupowanie po obrazku i kolorze
   const groups = {};
 
   for (const p of pieces) {
@@ -63,12 +65,10 @@ export function getCoordsList(backSizeRows, board, pieces, codeMargin) {
     if (p.y < boardHeight) {
       row = Math.floor(p.y / cellSize) + 1;
       label = `${String.fromCharCode(65 + col)}${row}`;
-    } else {
-      row = Math.floor((p.y - boardHeight - codeMargin) / cellSize) + 1;
-      label = `${String.fromCharCode(65 + col)}K${row}`;
-    }
+    } else continue;
+    // row = Math.floor((p.y - boardHeight - codeMargin) / cellSize) + 1;
+    // label = `${String.fromCharCode(65 + col)}K${row}`;
 
-    // Klucz: img+color (null jeśli brak)
     const imgKey = p.img || null;
     const colorKey = p.color || null;
     const groupKey = `${imgKey}|${colorKey}`;
@@ -83,7 +83,6 @@ export function getCoordsList(backSizeRows, board, pieces, codeMargin) {
     groups[groupKey].coords.push(label);
   }
 
-  // Zamiana na tablicę obiektów
   return Object.values(groups);
 }
 
@@ -103,4 +102,60 @@ export function wrapText(pdf, text, maxWidth) {
   });
   if (currentLine) lines.push(currentLine);
   return lines;
+}
+
+export function addPixelAt(x, y, color, isFront, piecesFront, piecesGrid) {
+  // Blokada: nie maluj w przestrzeni między planszą a blokiem kodu oraz na pierwszym polu w bloku kod
+  if (!isFront) {
+    // Parametry planszy
+    const cellSize = boardGameState.cellSize;
+    const boardHeight = boardGameState.backSizeRows * cellSize;
+    const codeMargin = boardGameState.codeMargin;
+    const codeRows = boardGameState.codeRows;
+
+    // Przestrzeń między planszą a blokiem kodu
+    if (y >= boardHeight && y < boardHeight + codeMargin) {
+      return false;
+    }
+
+    // Blok kodu
+    const codeStartY = boardHeight + codeMargin;
+    if (y >= codeStartY && y < codeStartY + codeRows * cellSize) {
+      // Pierwsze pole w bloku kodu (kolumna 0, wiersz 0)
+      const col = Math.floor(x / cellSize);
+      const row = Math.floor((y - codeStartY) / cellSize);
+      if (col === 0 && row === 0) {
+        return false;
+      }
+    }
+  }
+
+  const idxTable = isFront ? piecesFront : piecesGrid;
+  const existingPixelIndex = idxTable.findIndex(
+    (p) => Math.abs(p.x - x) < 2 && Math.abs(p.y - y) < 2 && p.isPixel
+  );
+
+  // Jeśli piksel już istnieje, podmień go na nowy kolor
+  if (existingPixelIndex !== -1) {
+    idxTable[existingPixelIndex].color = color;
+    return true;
+  }
+
+  // Dodaj nowy piksel
+  const pixelObj = {
+    x,
+    y,
+    color,
+    img: null,
+    isCodingDisc: false,
+    isPixel: true,
+  };
+
+  if (isFront) {
+    piecesFront.push(pixelObj);
+  } else {
+    piecesGrid.push(pixelObj);
+  }
+
+  return true;
 }

@@ -13,21 +13,20 @@
   justify-content: flex-start;
   margin-right: 2px;
   position: absolute;
-  left: -25px;
-  top: 0px;
+  left: 10px;
+  top: 40px;
 }
 #xAxis {
   display: flex;
   justify-content: center;
   margin-bottom: 2px;
   position: absolute;
-  top: -20px;
-  left: 0px;
+  top: 10px;
+  left: 40px;
 }
 
 .pickerPanel {
   display: flex;
-  margin-right: 40px;
   flex-direction: column;
   align-items: center;
   width: 20%;
@@ -50,6 +49,12 @@
 }
 
 .pickerItemsWrapper {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+
   margin-top: 10px;
   width: 100%;
   height: 80%;
@@ -74,12 +79,14 @@
   justify-content: flex-start;
   flex-direction: column;
   position: relative;
+  overflow: auto;
+  padding: 40px;
 }
 
 #boardOverlay {
   position: absolute;
-  left: 0;
-  top: 0;
+  left: 39px;
+  top: 39px;
   z-index: 2;
   pointer-events: none;
 }

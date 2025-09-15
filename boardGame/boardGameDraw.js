@@ -39,7 +39,7 @@ export function drawBoard(ctxOverlay, ctxBoard, options) {
       codeSectionY,
       0
     );
-    const circleX = 0 * boardGameState.cellSize + boardGameState.cellSize / 2; // kolumna A (0)
+    const circleX = 0 * boardGameState.cellSize + boardGameState.cellSize / 2;
     const circleY =
       boardRows * boardGameState.cellSize +
       boardGameState.codeMargin +
@@ -167,6 +167,26 @@ export function drawPicker() {
       imagesDiv.appendChild(imgBtn);
     };
 
+    // Dodaj gumkę tylko w sekcji Kolorowe piksele i tylko na drugiej stronie maty
+    if (!boardGameState.isFront && section.name === "Kolorowe piksele") {
+      const eraserBtn = document.createElement("button");
+      eraserBtn.className = "imgButton";
+      eraserBtn.title = "Gumka";
+      eraserBtn.style.width = "75px";
+      eraserBtn.style.height = "75px";
+      eraserBtn.style.borderRadius = "0";
+      eraserBtn.style.border = "2px solid #333";
+      eraserBtn.style.position = "relative";
+      eraserBtn.style.margin = "5px";
+      eraserBtn.style.background = "#eee";
+      eraserBtn.innerHTML = "<span style='font-size:32px;'>🧽</span>";
+      eraserBtn.onclick = () => {
+        boardGameState.dragging = { isEraser: true };
+        boardGameState.isPainting = false;
+        boardGameState.paintColor = null;
+      };
+      imagesDiv.appendChild(eraserBtn);
+    }
     if (colors) {
       colors.forEach((bgColor) =>
         forColoring.forEach((item) => createBtn(item, bgColor))
@@ -356,7 +376,21 @@ function drawGrid(ctx, rows, cols, cellSize, marginForAxes, isFront) {
       } else {
         x = marginForAxes + c * cellSize;
         y = marginForAxes + r * cellSize;
-        drawCell(ctx, x, y, cellSize, null, false);
+        if (c === rows - 1) {
+          if (marginForAxes === 0) {
+            x = x - 2;
+          } else {
+            x = x - 1;
+          }
+        }
+        if (r === rows - 1) {
+          if (marginForAxes === 0) {
+            y = y - 2;
+          } else {
+            y = y - 1;
+          }
+        }
+        drawCell(ctx, x + 1, y + 1, cellSize, null, false);
       }
     }
   }
@@ -376,17 +410,19 @@ function drawCodeGrid(
 ) {
   for (let r = 0; r < codeRows; r++) {
     for (let c = 0; c < boardRows; c++) {
-      const x = codeSectionX + c * cellSize;
-      const y = codeSectionY + r * cellSize;
-      drawCell(ctxBoard, x, y, cellSize, color, arc);
+      let x = codeSectionX + c * cellSize;
+      let y = codeSectionY + r * cellSize;
+      if (c === boardRows - 1) x = x - 2;
+      drawCell(ctxBoard, x + 1, y - 1, cellSize, color, arc);
     }
   }
 }
 
 function drawPicture(ctx, marginForAxesX, marginForAxesY, pieces) {
-  for (let p of pieces) {
-    const img = p.img ? boardGameState.loadedImages[p.img] : null;
-    if (boardGameState.isFront || !p.isPixel) {
+  if (boardGameState.isFront) {
+    // Na stronie front: wszystkie elementy jako krążki
+    for (let p of pieces) {
+      const img = p.img ? boardGameState.loadedImages[p.img] : null;
       drawCirclePiece(
         ctx,
         p.x + marginForAxesX,
@@ -395,8 +431,25 @@ function drawPicture(ctx, marginForAxesX, marginForAxesY, pieces) {
         p.color,
         img
       );
-    } else {
+    }
+  } else {
+    // Na stronie back najpierw piksele, potem krążki
+    for (let p of pieces) {
+      if (!p.isPixel) continue;
+      const img = p.img ? boardGameState.loadedImages[p.img] : null;
       drawSquarePiece(
+        ctx,
+        p.x + marginForAxesX,
+        p.y + marginForAxesY,
+        boardGameState.cellSize,
+        p.color,
+        img
+      );
+    }
+    for (let p of pieces) {
+      if (p.isPixel) continue;
+      const img = p.img ? boardGameState.loadedImages[p.img] : null;
+      drawCirclePiece(
         ctx,
         p.x + marginForAxesX,
         p.y + marginForAxesY,
@@ -593,7 +646,7 @@ export async function drawPdfFile(coordToPrint) {
     );
 
     if (boardGameState.lockedImg) {
-      const x = marginForAxes + boardGameState.cellSize / 2; // UWAGA: +40 przesunięcie jak dla innych komórek!
+      const x = marginForAxes + boardGameState.cellSize / 2;
       const y =
         marginForAxes +
         sizeRows * boardGameState.cellSize +
@@ -608,17 +661,6 @@ export async function drawPdfFile(coordToPrint) {
         boardGameState.lockedImg
       );
     }
-    // Ramka wokół sekcji kodowania
-    tmpCtx.save();
-    tmpCtx.lineWidth = 2;
-    tmpCtx.strokeStyle = "#000";
-    tmpCtx.strokeRect(
-      marginForAxes,
-      marginForAxes + codeSectionY,
-      boardWidth,
-      codeSectionHeight
-    );
-    tmpCtx.restore();
   }
 
   // --- RYSOWANIE KRĄŻKÓW/PIXELI ---

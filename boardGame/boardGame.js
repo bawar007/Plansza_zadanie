@@ -5,6 +5,7 @@ import {
   getMousePos,
   isPixelAt,
   getCoordsList,
+  addPixelAt,
 } from "./boardGameHelpers.js";
 import { boardGameState } from "./boardGameState.js";
 import { registerBoardEvents, registerUIEvents } from "./boardGameEvents.js";
@@ -60,7 +61,6 @@ function updateCanvasSize() {
   const boardSize = boardGameState.isFront
     ? boardGameState.frontSizeRows * boardGameState.cellSize
     : boardGameState.backSizeRows * boardGameState.cellSize;
-  console.log(boardSize);
 
   board.width = boardSize;
   board.height = boardSize;
@@ -103,12 +103,46 @@ function renderBoard() {
 
 const boardHandlers = {
   onMouseMove: (e) => {
+    const cellSizeDefalut = boardGameState.cellSize;
+    const { mx, my, c, r, x, y } = getMousePos(e, board, cellSizeDefalut);
+
+    // Gumka: usuwanie pikseli podczas przesuwania myszy
+    if (boardGameState.isErasing && !boardGameState.isFront) {
+      const idx = boardGameState.piecesGrid.findIndex(
+        (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
+      );
+      if (idx !== -1) {
+        boardGameState.piecesGrid.splice(idx, 1);
+        renderBoard();
+      }
+      return;
+    }
+    // Jeśli jesteśmy w trybie malowania pikseli
+    if (
+      boardGameState.isPainting &&
+      boardGameState.paintColor &&
+      !boardGameState.isFront
+    ) {
+      if (
+        addPixelAt(
+          x,
+          y,
+          boardGameState.paintColor,
+          boardGameState.isFront,
+          boardGameState.piecesFront,
+          boardGameState.piecesGrid
+        )
+      ) {
+        renderBoard();
+      }
+      return;
+    }
+
     if (!boardGameState.dragging) {
       ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
       return;
     }
-    const cellSizeDefalut = boardGameState.cellSize;
-    const { mx, my, c, r, x, y } = getMousePos(e, board, cellSizeDefalut);
+
     const {
       dragging,
       frontSizeRows,
@@ -125,8 +159,21 @@ const boardHandlers = {
     ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
     ctxOverlay.save();
 
+    // Podgląd gumki
+    if (dragging.isEraser) {
+      drawSquarePiece(ctxOverlay, mx, my, cellSizeDefalut, "#eee", null);
+      ctxOverlay.restore();
+      return;
+    }
+
+    // ...istniejąca logika podglądu dla malowania i krążków...
     const cells = isFront ? frontSizeRows : backSizeRows + 4;
 
+    // Sprawdź różne warunki blokowania
+    let isBlocked = false;
+    let blockMessage = "";
+
+    // Sprawdź czy to zablokowana komórka (tylko na tylnej stronie)
     if (!boardGameState.isFront) {
       const boardHeight = boardGameState.backSizeRows * boardGameState.cellSize;
       const codeStartY = boardHeight + boardGameState.codeMargin;
@@ -142,12 +189,44 @@ const boardHandlers = {
         row === 0;
 
       if (isLockedCell) {
-        showMessage("Nie można modyfikować tej komórki!");
-        board.style.cursor = "not-allowed";
-      } else {
-        showMessage("");
-        board.style.cursor = "default";
+        isBlocked = true;
+        blockMessage = "Nie można modyfikować tej komórki!";
       }
+    }
+
+    // Sprawdź czy miejsce jest zajęte przez krążek (ale nie podczas malowania pikseli)
+    if (!isBlocked && (!dragging.isPixel || boardGameState.isFront)) {
+      const isOccupiedSpot = isOccupied(
+        boardGameState.isFront,
+        x,
+        y,
+        boardGameState.piecesFront,
+        boardGameState.piecesGrid
+      );
+
+      if (isOccupiedSpot) {
+        isBlocked = true;
+        blockMessage = "To miejsce jest zajęte!";
+
+        const table = boardGameState.isFront
+          ? boardGameState.piecesFront
+          : boardGameState.piecesGrid;
+        const blocking = table.find(
+          (p) =>
+            Math.abs(p.x - x) < 5 &&
+            Math.abs(p.y - y) < 5 &&
+            (boardGameState.isFront || !p.isPixel)
+        );
+      }
+    }
+
+    // Ustaw kursor i komunikat na podstawie wyniku
+    if (isBlocked) {
+      showMessage(blockMessage);
+      board.style.cursor = "not-allowed";
+    } else {
+      showMessage("");
+      board.style.cursor = "default";
     }
 
     if (dragging.img) {
@@ -215,12 +294,8 @@ const boardHandlers = {
         } else if (isOccupied(isFront, x, y, piecesFront, piecesGrid)) {
           showMessage("Nie można postawić");
           board.style.cursor = "not-allowed";
-        } else if (
-          boardGameState.dragging.isPixel &&
-          isPixelAt(x, y, boardGameState.piecesGrid)
-        ) {
-          board.style.cursor = "not-allowed";
-          showMessage("Nie można malować na już istniejącym pixelu!");
+        } else if (!boardGameState.isFront && boardGameState.dragging.isPixel) {
+          board.style.cursor = "crosshair";
         } else {
           showMessage("");
           board.style.cursor = "default";
@@ -247,12 +322,38 @@ const boardHandlers = {
       showMessage("");
       renderBoard();
     }
+    board.style.cursor = "default";
   },
   onMouseUp: (e) => {
+    if (e.button !== 0) return;
+
+    // Jeśli byliśmy w trybie malowania, zakończ malowanie
+    if (boardGameState.isPainting) {
+      boardGameState.paintColor = null;
+      return;
+    }
+
     if (boardGameState.dragging) {
       ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
 
       const { x, y } = getMousePos(e, board, boardGameState.cellSize);
+
+      if (boardGameState.dragging.isEraser) {
+        if (boardGameState.isErasing) {
+          if (!boardGameState.isFront) {
+            const idx = boardGameState.piecesGrid.findIndex(
+              (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
+            );
+            if (idx !== -1) {
+              boardGameState.piecesGrid.splice(idx, 1);
+            }
+          }
+          boardGameState.isErasing = false;
+          showMessage("");
+          renderBoard();
+          return;
+        }
+      }
 
       const isCodingDisc = !!boardGameState.dragging.isCodingDisc;
       const boardHeight = boardGameState.backSizeRows * boardGameState.cellSize;
@@ -274,46 +375,47 @@ const boardHandlers = {
       }
       // Jeśli kliknięto w główną planszę
       if (y >= 0 && y < boardHeight) {
-        if (
-          !isOccupied(
-            boardGameState.isFront,
-            x,
-            y,
-            boardGameState.piecesFront,
-            boardGameState.piecesGrid
-          )
-        ) {
-          if (boardGameState.dragging.isPixel) {
-            if (isPixelAt(x, y, boardGameState.piecesGrid)) {
-              showMessage("Nie można malować na już istniejącym pixelu!");
-              return;
-            }
-          }
-          if (!boardGameState.isFront && isCodingDisc) {
-            showMessage(
-              "Krążki do kodowania można dodać tylko w sekcjach k1, k2, k3 !"
-            );
-            return;
-          }
-          const pieceObj = {
-            x,
-            y,
-            color: boardGameState.dragging.color,
-            img: boardGameState.dragging.img,
-            isCodingDisc: isCodingDisc,
-            isPixel: !!boardGameState.dragging.isPixel,
-          };
+        const isOccupiedSpot = isOccupied(
+          boardGameState.isFront,
+          x,
+          y,
+          boardGameState.piecesFront,
+          boardGameState.piecesGrid
+        );
 
-          if (boardGameState.isFront) {
-            boardGameState.piecesFront.push(pieceObj);
-          } else {
-            boardGameState.piecesGrid.push(pieceObj);
-          }
+        if (isOccupiedSpot) {
+          return;
+        }
+
+        if (!boardGameState.isFront && isCodingDisc) {
+          showMessage(
+            "Krążki do kodowania można dodać tylko w sekcjach k1, k2, k3 !"
+          );
+          return;
+        }
+
+        const pieceObj = {
+          x,
+          y,
+          color: boardGameState.dragging.color,
+          img: boardGameState.dragging.img,
+          isCodingDisc: isCodingDisc,
+          isPixel: !!boardGameState.dragging.isPixel,
+        };
+
+        if (boardGameState.isFront) {
+          boardGameState.piecesFront.push(pieceObj);
           boardGameState.dragging = null;
           boardGameState.prevPiece = null;
-          showMessage("");
-          renderBoard();
+        } else {
+          boardGameState.piecesGrid.push(pieceObj);
+          if (!boardGameState.dragging.isPixel) {
+            boardGameState.dragging = null;
+            boardGameState.prevPiece = null;
+          }
         }
+        showMessage("");
+        renderBoard();
       }
       // Jeśli kliknięto w pustą przestrzeń
       if (y >= boardHeight && y < codeStartY) {
@@ -326,65 +428,123 @@ const boardHandlers = {
         y >= codeStartY &&
         y < codeStartY + boardGameState.codeRows * boardGameState.cellSize
       ) {
-        if (
-          !isOccupied(
-            boardGameState.isFront,
-            x,
-            y,
-            boardGameState.piecesFront,
-            boardGameState.piecesGrid
-          )
-        ) {
-          if (boardGameState.dragging.isPixel) {
-            if (isPixelAt(x, y, boardGameState.piecesGrid)) {
-              showMessage("Nie można malować na już istniejącym pixelu!");
-              return;
-            }
-          }
-          const pieceObj = {
-            x,
-            y,
-            color: boardGameState.dragging.color,
-            img: boardGameState.dragging.img,
-            isCodingDisc: isCodingDisc,
-            isPixel: !!boardGameState.dragging.isPixel,
-          };
+        const isOccupiedSpot = isOccupied(
+          boardGameState.isFront,
+          x,
+          y,
+          boardGameState.piecesFront,
+          boardGameState.piecesGrid
+        );
 
-          if (boardGameState.isFront) {
-            boardGameState.piecesFront.push(pieceObj);
-          } else {
-            boardGameState.piecesGrid.push(pieceObj);
-          }
+        if (isOccupiedSpot) {
+          return;
+        }
+
+        const pieceObj = {
+          x,
+          y,
+          color: boardGameState.dragging.color,
+          img: boardGameState.dragging.img,
+          isCodingDisc: isCodingDisc,
+          isPixel: !!boardGameState.dragging.isPixel,
+        };
+
+        if (boardGameState.isFront) {
+          boardGameState.piecesFront.push(pieceObj);
           boardGameState.dragging = null;
           boardGameState.prevPiece = null;
-          showMessage("");
-          renderBoard();
+        } else {
+          boardGameState.piecesGrid.push(pieceObj);
+          if (!boardGameState.dragging.isPixel) {
+            boardGameState.dragging = null;
+            boardGameState.prevPiece = null;
+          }
         }
+
+        showMessage("");
+        renderBoard();
       }
     }
   },
   onMouseDown: (e) => {
-    if (boardGameState.dragging) return;
+    // Sprawdź czy mamy wybraną gumkę (tylko na tylnej stronie)
+    if (
+      !boardGameState.isFront &&
+      boardGameState.dragging &&
+      boardGameState.dragging.isEraser
+    ) {
+      boardGameState.isErasing = true;
+      showMessage("Tryb gumki aktywny");
+
+      return;
+    }
+    if (boardGameState.isErasing) {
+      boardGameState.isErasing = false;
+      boardGameState.dragging = null;
+      showMessage("");
+      return;
+    }
+    if (e.button !== 0) {
+      boardGameState.dragging = null;
+      boardGameState.prevPiece = null;
+      boardGameState.paintColor = null;
+      board.style.cursor = "default";
+      showMessage("");
+      return;
+    }
 
     ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
     const cellSizeDefalut = boardGameState.cellSize;
 
     const { mx, my, x, y } = getMousePos(e, board, cellSizeDefalut);
 
+    // Sprawdź czy mamy wybrany piksel do malowania (tylko na tylnej stronie)
+    if (
+      !boardGameState.isFront &&
+      boardGameState.dragging &&
+      boardGameState.dragging.isPixel
+    ) {
+      // Rozpocznij malowanie - nie szukaj elementów do przeciągnięcia
+      boardGameState.isPainting = true;
+      boardGameState.paintColor = boardGameState.dragging.color;
+
+      // Dodaj pierwszy piksel
+      addPixelAt(
+        x,
+        y,
+        boardGameState.paintColor,
+        boardGameState.isFront,
+        boardGameState.piecesFront,
+        boardGameState.piecesGrid
+      );
+      renderBoard();
+      return;
+    }
+
+    // Jeśli już trzymamy krążek (nie piksel), nie szukaj nowych elementów do przeciągnięcia
+    if (boardGameState.dragging) {
+      if (!boardGameState.isFront) {
+        if (!boardGameState.dragging.isPixel) return;
+      } else {
+        return;
+      }
+    }
+
     const idxTable = boardGameState.isFront
       ? boardGameState.piecesFront
       : boardGameState.piecesGrid;
 
+    // Na przedniej stronie szukaj wszystkich elementów (krążki + piksele)
+    // Na tylnej stronie szukaj tylko krążków (piksele są do malowania)
     let idx = idxTable.findIndex(
-      (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && !p.isPixel
+      (p) =>
+        Math.abs(p.x - x) < 5 &&
+        Math.abs(p.y - y) < 5 &&
+        (boardGameState.isFront || !p.isPixel)
     );
-    if (idx === -1) {
-      idx = idxTable.findIndex(
-        (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
-      );
-    }
 
     if (idx !== -1) {
+      // Znaleziono krążek do przeciągnięcia
       boardGameState.dragging = {
         color: idxTable[idx].color,
         img: idxTable[idx].img,
@@ -405,27 +565,50 @@ const boardHandlers = {
   },
   onContextMenu: (e) => {
     e.preventDefault();
-    const { x, y } = getMousePos(e, board, boardGameState.cellSize);
-
-    const idxTable = boardGameState.isFront
-      ? boardGameState.piecesFront
-      : boardGameState.piecesGrid;
-    let idx = idxTable.findIndex(
-      (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && !p.isPixel
-    );
-    if (idx === -1) {
-      idx = idxTable.findIndex(
-        (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
-      );
+    if (boardGameState.isPainting) {
+      boardGameState.isPainting = false;
+      boardGameState.paintColor = null;
+      board.style.cursor = "default";
+      showMessage("");
+      return;
+    }
+    if (boardGameState.isErasing) {
+      boardGameState.isErasing = false;
+      boardGameState.dragging = null;
+      board.style.cursor = "default";
+      showMessage("");
+      return;
     }
 
-    if (idx !== -1) {
-      if (boardGameState.isFront) {
-        boardGameState.piecesFront.splice(idx, 1);
-      } else {
-        boardGameState.piecesGrid.splice(idx, 1);
+    const { x, y } = getMousePos(e, board, boardGameState.cellSize);
+    if (!boardGameState.dragging) {
+      const idxTable = boardGameState.isFront
+        ? boardGameState.piecesFront
+        : boardGameState.piecesGrid;
+      let idx = idxTable.findIndex(
+        (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && !p.isPixel
+      );
+      if (idx === -1) {
+        idx = idxTable.findIndex(
+          (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
+        );
       }
+      if (idx !== -1) {
+        if (boardGameState.isFront) {
+          boardGameState.piecesFront.splice(idx, 1);
+        } else {
+          boardGameState.piecesGrid.splice(idx, 1);
+        }
+        board.style.cursor = "default";
+        renderBoard();
+      }
+    } else {
+      boardGameState.dragging = null;
+      boardGameState.prevPiece = null;
+      board.style.cursor = "default";
+      showMessage("");
       renderBoard();
+      return;
     }
   },
 };
