@@ -3,12 +3,18 @@ import {
   getImage,
   showMessage,
   getMousePos,
-  isPixelAt,
   getCoordsList,
   addPixelAt,
+  getTouchPos,
 } from "./boardGameHelpers.js";
 import { boardGameState } from "./boardGameState.js";
-import { registerBoardEvents, registerUIEvents } from "./boardGameEvents.js";
+import {
+  registerBoardMouseEvents,
+  registerBoardTouchEvents,
+  registerBoardWrapperEvents,
+  registerUIEvents,
+  registerWindowMouseEvents,
+} from "./boardGameEvents.js";
 import {
   drawCirclePiece,
   drawSquarePiece,
@@ -54,6 +60,8 @@ gameMain.innerHTML = `
 const board = document.getElementById("board");
 const ctxBoard = board.getContext("2d");
 
+const boardWrapper = document.getElementById("boardWrapper");
+
 const boardOverlay = document.getElementById("boardOverlay");
 const ctxOverlay = boardOverlay.getContext("2d");
 
@@ -86,6 +94,8 @@ function renderBoard() {
       boardWidth: boardGameState.frontSizeRows * boardGameState.cellSize,
       boardHeight: boardGameState.frontSizeRows * boardGameState.cellSize,
     });
+    board.style.border = "2px solid #000";
+    boardWrapper.style.alignItems = "center";
   } else {
     drawBoard(ctxOverlay, ctxBoard, {
       isFront: boardGameState.isFront,
@@ -98,61 +108,29 @@ function renderBoard() {
         boardGameState.backSizeRows * boardGameState.cellSize +
         boardGameState.codeRows * boardGameState.cellSize,
     });
+    board.style.border = "none";
+    boardWrapper.style.alignItems = "flex-start";
   }
 }
 
-const SCROLL_EDGE = 200;
-const SCROLL_STEP = 5;
-let scrollDirectionX = 0;
-let scrollDirectionY = 0;
-let scrollAnimFrame = null;
+// Obsługa dotyku dla mobilnych
 let isDraggingBoard = false;
 let dragStartX = 0;
 let scrollStartX = 0;
 
-function smoothScrollBoard() {
-  if (scrollDirectionX !== 0 || scrollDirectionY !== 0) {
-    let newScrollX = boardWrapper.scrollLeft + scrollDirectionX * SCROLL_STEP;
-    let newScrollY = boardWrapper.scrollTop + scrollDirectionY * SCROLL_STEP;
-    newScrollX = Math.max(
-      0,
-      Math.min(newScrollX, boardWrapper.scrollWidth - boardWrapper.clientWidth)
-    );
-    newScrollY = Math.max(
-      0,
-      Math.min(
-        newScrollY,
-        boardWrapper.scrollHeight - boardWrapper.clientHeight
-      )
-    );
-    boardWrapper.scrollLeft = newScrollX;
-    scrollAnimFrame = requestAnimationFrame(smoothScrollBoard);
-  }
-}
+let isTouchDraggingBoard = false;
+let touchStartX = 0;
+let touchStartY = 0;
+let touchScrollStartX = 0;
+let touchScrollStartY = 0;
+let isTouchErasing = false;
+let touchDraggingPiece = null;
+let touchTimer = null;
 
-const boardHandlers = {
+const boardMouseHandlers = {
   onMouseMove: (e) => {
     const cellSizeDefalut = boardGameState.cellSize;
     const { mx, my, c, r, x, y } = getMousePos(e, board, cellSizeDefalut);
-
-    // --- Płynne auto-scroll zawsze gdy kursor blisko krawędzi ---
-    const wrapperRect = boardWrapper.getBoundingClientRect();
-    scrollDirectionX = 0;
-    if (e.clientX - wrapperRect.left < SCROLL_EDGE) {
-      scrollDirectionX = -1;
-    } else if (wrapperRect.right - e.clientX < SCROLL_EDGE) {
-      scrollDirectionX = 1;
-    }
-
-    if (scrollDirectionX !== 0) {
-      if (!scrollAnimFrame)
-        scrollAnimFrame = requestAnimationFrame(smoothScrollBoard);
-    } else {
-      if (scrollAnimFrame) {
-        cancelAnimationFrame(scrollAnimFrame);
-        scrollAnimFrame = null;
-      }
-    }
 
     // Gumka: usuwanie pikseli podczas przesuwania myszy
     if (boardGameState.isErasing && !boardGameState.isFront) {
@@ -716,116 +694,23 @@ const uiHandlers = {
   },
 };
 
-function initGame() {
-  drawPicker();
-  registerBoardEvents(board, boardHandlers);
-  registerUIEvents(uiHandlers);
-  renderBoard();
-}
+const windowMouseHandlers = {
+  onMouseMove: (e) => {
+    if (!isDraggingBoard || boardGameState.dragging) return;
+    const dx = dragStartX - e.clientX;
+    boardWrapper.scrollLeft = scrollStartX + dx;
+  },
+  onMouseUp: (e) => {
+    if (isDraggingBoard) {
+      isDraggingBoard = false;
+      boardWrapper.style.cursor = "default";
+    }
+  },
+};
 
-initGame();
-
-// Drag-to-scroll dla planszy (myszą)
-boardWrapper.addEventListener("mousedown", function (e) {
-  if (e.button !== 0 || e.target.id === "yAxis") return;
-  isDraggingBoard = true;
-  dragStartX = e.clientX;
-  scrollStartX = boardWrapper.scrollLeft;
-});
-
-window.addEventListener("mousemove", function (e) {
-  if (!isDraggingBoard) return;
-  const dx = dragStartX - e.clientX;
-  boardWrapper.scrollLeft = scrollStartX + dx;
-});
-
-window.addEventListener("mouseup", function (e) {
-  if (isDraggingBoard) {
-    isDraggingBoard = false;
-    boardWrapper.style.cursor = "default";
-  }
-});
-
-// Zatrzymaj animację scrolla przy opuszczeniu planszy
-board.addEventListener("mouseleave", () => {
-  scrollDirectionX = 0;
-  if (scrollAnimFrame) {
-    cancelAnimationFrame(scrollAnimFrame);
-    scrollAnimFrame = null;
-  }
-});
-
-// Obsługa dotyku dla mobilnych
-let isTouchDraggingBoard = false;
-let touchStartX = 0;
-let touchStartY = 0;
-let touchScrollStartX = 0;
-let touchScrollStartY = 0;
-let isTouchPainting = false;
-let isTouchErasing = false;
-let touchDraggingPiece = null;
-
-boardWrapper.addEventListener(
-  "touchstart",
-  function (e) {
+const boardTouchHandlers = {
+  onTouchStart: (e) => {
     if (e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    isTouchDraggingBoard = true;
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-    touchScrollStartX = boardWrapper.scrollLeft;
-    touchScrollStartY = boardWrapper.scrollTop;
-    boardWrapper.style.cursor = "grab";
-  },
-  { passive: false }
-);
-
-boardWrapper.addEventListener(
-  "touchmove",
-  function (e) {
-    if (!isTouchDraggingBoard || e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    const dx = touchStartX - touch.clientX;
-    const dy = touchStartY - touch.clientY;
-    boardWrapper.scrollLeft = touchScrollStartX + dx;
-    boardWrapper.scrollTop = touchScrollStartY + dy;
-    e.preventDefault();
-  },
-  { passive: false }
-);
-
-boardWrapper.addEventListener(
-  "touchend",
-  function (e) {
-    isTouchDraggingBoard = false;
-    boardWrapper.style.cursor = "default";
-  },
-  { passive: false }
-);
-
-// Obsługa tap/long tap na planszy
-let touchTimer = null;
-let touchMoved = false;
-let touchStartBoardX = 0;
-let touchStartBoardY = 0;
-
-function getTouchPos(e, board, cellSize) {
-  const touch = e.touches?.[0] || e.changedTouches?.[0];
-  if (!touch) return { x: 0, y: 0 };
-  const rect = board.getBoundingClientRect();
-  const x = touch.clientX - rect.left;
-  const y = touch.clientY - rect.top;
-  return { x, y };
-}
-
-board.addEventListener(
-  "touchstart",
-  function (e) {
-    if (e.touches.length !== 1) return;
-    touchMoved = false;
-    const touch = e.touches[0];
-    touchStartBoardX = touch.clientX;
-    touchStartBoardY = touch.clientY;
     // Sprawdź czy dotyk jest na elemencie do przeciągnięcia
     const { x, y } = getTouchPos(e, board, boardGameState.cellSize);
     let idxTable = boardGameState.isFront
@@ -853,18 +738,11 @@ board.addEventListener(
       showMessage("Tryb gumki aktywny (dotyk)");
     }, 500);
   },
-  { passive: false }
-);
-
-board.addEventListener(
-  "touchmove",
-  function (e) {
-    touchMoved = true;
+  onTouchMove: (e) => {
     if (touchTimer) {
       clearTimeout(touchTimer);
       touchTimer = null;
     }
-    const touch = e.touches[0];
     const { x, y } = getTouchPos(e, board, boardGameState.cellSize);
     if (isTouchErasing) {
       // Gumka: usuwanie pikseli
@@ -926,12 +804,7 @@ board.addEventListener(
       return;
     }
   },
-  { passive: false }
-);
-
-board.addEventListener(
-  "touchend",
-  function (e) {
+  onTouchEnd: (e) => {
     if (touchTimer) {
       clearTimeout(touchTimer);
       touchTimer = null;
@@ -981,5 +854,48 @@ board.addEventListener(
       renderBoard();
     }
   },
-  { passive: false }
-);
+};
+
+const boardWrapperHandlers = {
+  onMouseDown: (e) => {
+    if (e.button !== 0 || e.target.id === "yAxis") return;
+    isDraggingBoard = true;
+    dragStartX = e.clientX;
+    scrollStartX = boardWrapper.scrollLeft;
+  },
+  onTouchStart: (e) => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    isTouchDraggingBoard = true;
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchScrollStartX = boardWrapper.scrollLeft;
+    touchScrollStartY = boardWrapper.scrollTop;
+    boardWrapper.style.cursor = "grab";
+  },
+  onTouchMove: (e) => {
+    if (!isTouchDraggingBoard || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const dx = touchStartX - touch.clientX;
+    const dy = touchStartY - touch.clientY;
+    boardWrapper.scrollLeft = touchScrollStartX + dx;
+    boardWrapper.scrollTop = touchScrollStartY + dy;
+    e.preventDefault();
+  },
+  onTouchEnd: (e) => {
+    isTouchDraggingBoard = false;
+    boardWrapper.style.cursor = "default";
+  },
+};
+
+function initGame() {
+  drawPicker();
+  registerBoardMouseEvents(board, boardMouseHandlers);
+  registerBoardTouchEvents(board, boardTouchHandlers);
+  registerBoardWrapperEvents(boardWrapper, boardWrapperHandlers);
+  registerWindowMouseEvents(windowMouseHandlers);
+  registerUIEvents(uiHandlers);
+  renderBoard();
+}
+
+initGame();

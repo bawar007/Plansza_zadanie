@@ -95,12 +95,6 @@ export function drawBoard(ctxOverlay, ctxBoard, options) {
     ctxBoard.stroke();
 
     ctxBoard.restore();
-  } else {
-    ctxBoard.save();
-    ctxBoard.lineWidth = 2;
-    ctxBoard.strokeStyle = "#000";
-    ctxBoard.strokeRect(0, 0, boardWidth, boardHeight);
-    ctxBoard.restore();
   }
 
   drawPicture(ctxBoard, 0, 0, pieces);
@@ -288,8 +282,8 @@ export function drawLabels(board) {
   }
 
   const showAxes = !boardGameState.isFront;
-  yAxis.style.visibility = showAxes ? "visible" : "hidden";
-  xAxis.style.visibility = showAxes ? "visible" : "hidden";
+  yAxis.style.display = showAxes ? "flex" : "none";
+  xAxis.style.display = showAxes ? "flex" : "none";
 
   function createElement() {
     const div = document.createElement("div");

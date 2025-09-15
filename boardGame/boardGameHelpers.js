@@ -13,12 +13,6 @@ export function isOccupied(isFront, x, y, piecesFront, piecesGrid) {
   }
 }
 
-export function isPixelAt(x, y, piecesGrid) {
-  return piecesGrid.some(
-    (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
-  );
-}
-
 export function getImage(src, callback) {
   if (!src) return;
   const img = new Image();
@@ -49,6 +43,15 @@ export function getMousePos(e, board, cellSizeDefalut) {
   const x = c * cellSizeDefalut + cellSizeDefalut / 2;
   const y = r * cellSizeDefalut + cellSizeDefalut / 2;
   return { mx, my, c, r, x, y };
+}
+
+export function getTouchPos(e, board, cellSize) {
+  const touch = e.touches?.[0] || e.changedTouches?.[0];
+  if (!touch) return { x: 0, y: 0 };
+  const rect = board.getBoundingClientRect();
+  const x = touch.clientX - rect.left;
+  const y = touch.clientY - rect.top;
+  return { x, y };
 }
 
 export function getCoordsList(backSizeRows, board, pieces, codeMargin) {

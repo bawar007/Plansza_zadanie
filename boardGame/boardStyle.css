@@ -29,7 +29,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 20%;
+  width: 20vw;
   position: sticky;
   top: 0px;
   padding-top: 10px;
@@ -85,8 +85,8 @@
 
 #boardOverlay {
   position: absolute;
-  left: 39px;
-  top: 39px;
+  left: 40px;
+  top: 40px;
   z-index: 2;
   pointer-events: none;
 }
@@ -158,4 +158,28 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+@media (max-width: 1024px) {
+  #gameMain {
+    flex-direction: column;
+    align-items: center;
+  }
+  #boardWrapper {
+    width: 100%;
+    max-height: 60vh;
+    margin: 40px 0;
+  }
+  .pickerPanel {
+    width: 100%;
+    background-color: white;
+    height: auto;
+  }
+  #picker {
+    height: 200px;
+  }
+  .buttonsContainer > button {
+    width: 30% !important;
+    margin: 5px;
+  }
 }
