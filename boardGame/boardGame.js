@@ -67,22 +67,50 @@ const boardOverlay = document.getElementById("boardOverlay");
 const ctxOverlay = boardOverlay.getContext("2d");
 
 function updateCanvasSize() {
-  const boardSize = boardGameState.isFront
-    ? boardGameState.frontSizeRows * boardGameState.cellSize
-    : boardGameState.backSizeRows * boardGameState.cellSize;
-
-  board.width = boardSize;
-  board.height = boardSize;
-  boardOverlay.width = boardSize;
-  boardOverlay.height = boardSize;
-
-  if (boardGameState.isFront) {
+  // Ustawmy najpierw cellSize w zależności od trybu
+  if (boardGameState.isBoard50x50) {
+    boardGameState.cellSize = 100;
     boardGameState.codeMargin = 0;
+    // Dodaj klasę CSS dla wrapper
+    boardWrapper.className = "board50x50";
+    boardOverlay.style.left = "140px";
+    boardOverlay.style.top = "140px";
   } else {
-    boardGameState.codeMargin = 80;
+    boardGameState.cellSize = 80;
+    // Usuń klasę CSS dla wrapper
+    boardWrapper.className = "";
+    boardOverlay.style.left = "40px";
+    boardOverlay.style.top = "40px";
+    if (boardGameState.isFront) {
+      boardGameState.codeMargin = 0;
+    } else {
+      boardGameState.codeMargin = 80;
+    }
   }
 
-  drawLabels(board);
+  // Oblicz rozmiary z prawidłową wartością cellSize
+  let boardWidth, boardHeight;
+
+  if (boardGameState.isBoard50x50) {
+    boardWidth = 5 * boardGameState.cellSize;
+    boardHeight = 5 * boardGameState.cellSize;
+  } else if (boardGameState.isFront) {
+    boardWidth = boardGameState.frontSizeRows * boardGameState.cellSize;
+    boardHeight = boardGameState.frontSizeRows * boardGameState.cellSize;
+  } else {
+    boardWidth = boardGameState.backSizeRows * boardGameState.cellSize;
+    boardHeight =
+      boardGameState.codeMargin +
+      boardGameState.backSizeRows * boardGameState.cellSize +
+      boardGameState.codeRows * boardGameState.cellSize;
+  }
+
+  board.width = boardWidth;
+  board.height = boardHeight;
+  boardOverlay.width = boardWidth;
+  boardOverlay.height = boardHeight;
+
+  drawLabels(board, boardHeight, boardWidth);
 }
 
 function renderBoard() {
@@ -92,8 +120,8 @@ function renderBoard() {
       pieces: boardGameState.pieces50x50,
       codeRows: 0,
       boardRows: 5,
-      boardWidth: 5 * 100,
-      boardHeight: 5 * 100,
+      boardWidth: 5 * boardGameState.cellSize,
+      boardHeight: 5 * boardGameState.cellSize,
     });
   } else {
     if (boardGameState.isFront) {
@@ -144,12 +172,18 @@ const boardMouseHandlers = {
     const { mx, my, c, r, x, y } = getMousePos(e, board, cellSizeDefalut);
 
     // Gumka: usuwanie pikseli podczas przesuwania myszy
-    if (boardGameState.isErasing && !boardGameState.isFront) {
-      const idx = boardGameState.piecesGrid.findIndex(
+    if (
+      boardGameState.isErasing &&
+      (!boardGameState.isFront || boardGameState.isBoard50x50)
+    ) {
+      const idxTable = boardGameState.isBoard50x50
+        ? boardGameState.pieces50x50
+        : boardGameState.piecesGrid;
+      const idx = idxTable.findIndex(
         (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
       );
       if (idx !== -1) {
-        boardGameState.piecesGrid.splice(idx, 1);
+        idxTable.splice(idx, 1);
         renderBoard();
       }
       return;
@@ -158,7 +192,7 @@ const boardMouseHandlers = {
     if (
       boardGameState.isPainting &&
       boardGameState.paintColor &&
-      !boardGameState.isFront
+      (!boardGameState.isFront || boardGameState.isBoard50x50)
     ) {
       if (
         addPixelAt(
@@ -167,7 +201,9 @@ const boardMouseHandlers = {
           boardGameState.paintColor,
           boardGameState.isFront,
           boardGameState.piecesFront,
-          boardGameState.piecesGrid
+          boardGameState.piecesGrid,
+          boardGameState.pieces50x50,
+          boardGameState.isBoard50x50
         )
       ) {
         renderBoard();
@@ -204,22 +240,32 @@ const boardMouseHandlers = {
     }
 
     // ...istniejąca logika podglądu dla malowania i krążków...
-    const cells = isFront ? frontSizeRows : backSizeRows + 4;
+    const cells = boardGameState.isBoard50x50
+      ? 5
+      : isFront
+      ? frontSizeRows
+      : backSizeRows + 4;
+    console.log(cells);
 
     // Sprawdź różne warunki blokowania
     let isBlocked = false;
     let blockMessage = "";
 
     // Sprawdź czy to zablokowana komórka (tylko na tylnej stronie)
-    if (!boardGameState.isFront) {
-      const boardHeight = boardGameState.backSizeRows * boardGameState.cellSize;
-      const codeStartY = boardHeight + boardGameState.codeMargin;
+    if (!boardGameState.isFront || boardGameState.isBoard50x50) {
+      const boardHeight = boardGameState.isBoard50x50
+        ? 5 * boardGameState.backSizeRows * boardGameState.cellSize
+        : boardGameState.backSizeRows * boardGameState.cellSize;
+
+      const codeStartY = boardGameState.isBoard50x50
+        ? boardHeight
+        : boardHeight + boardGameState.codeMargin;
 
       const col = Math.floor(x / cellSizeDefalut);
       const row = Math.floor((y - codeStartY) / cellSizeDefalut);
 
       const isLockedCell =
-        !boardGameState.isFront &&
+        (!boardGameState.isFront || boardGameState.isBoard50x50) &&
         y >= codeStartY &&
         y < codeStartY + boardGameState.codeRows * cellSizeDefalut &&
         col === 0 &&
@@ -232,28 +278,25 @@ const boardMouseHandlers = {
     }
 
     // Sprawdź czy miejsce jest zajęte przez krążek (ale nie podczas malowania pikseli)
-    if (!isBlocked && (!dragging.isPixel || boardGameState.isFront)) {
+    if (
+      !isBlocked &&
+      (!dragging.isPixel ||
+        boardGameState.isFront ||
+        boardGameState.isBoard50x50)
+    ) {
       const isOccupiedSpot = isOccupied(
+        boardGameState.isBoard50x50,
         boardGameState.isFront,
         x,
         y,
         boardGameState.piecesFront,
-        boardGameState.piecesGrid
+        boardGameState.piecesGrid,
+        boardGameState.pieces50x50
       );
 
       if (isOccupiedSpot) {
         isBlocked = true;
         blockMessage = "To miejsce jest zajęte!";
-
-        const table = boardGameState.isFront
-          ? boardGameState.piecesFront
-          : boardGameState.piecesGrid;
-        const blocking = table.find(
-          (p) =>
-            Math.abs(p.x - x) < 5 &&
-            Math.abs(p.y - y) < 5 &&
-            (boardGameState.isFront || !p.isPixel)
-        );
       }
     }
 
@@ -292,7 +335,10 @@ const boardMouseHandlers = {
         );
       }
     } else {
-      if (!boardGameState.isFront && dragging.isPixel) {
+      if (
+        (!boardGameState.isFront || boardGameState.isBoard50x50) &&
+        dragging.isPixel
+      ) {
         drawSquarePiece(
           ctxOverlay,
           mx,
@@ -328,10 +374,23 @@ const boardMouseHandlers = {
             "Krążki do kodowania można dodać tylko w sekcjach k1, k2, k3 !"
           );
           board.style.cursor = "not-allowed";
-        } else if (isOccupied(isFront, x, y, piecesFront, piecesGrid)) {
+        } else if (
+          isOccupied(
+            boardGameState.isBoard50x50,
+            isFront,
+            x,
+            y,
+            piecesFront,
+            piecesGrid,
+            boardGameState.pieces50x50
+          )
+        ) {
           showMessage("Nie można postawić");
           board.style.cursor = "not-allowed";
-        } else if (!boardGameState.isFront && boardGameState.dragging.isPixel) {
+        } else if (
+          (!boardGameState.isFront || boardGameState.isBoard50x50) &&
+          boardGameState.dragging.isPixel
+        ) {
           board.style.cursor = "crosshair";
         } else {
           showMessage("");
@@ -355,15 +414,21 @@ const boardMouseHandlers = {
     }
     if (boardGameState.dragging) {
       ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
-      if (boardGameState.isFront) {
+      if (boardGameState.isBoard50x50) {
         if (boardGameState.prevPiece) {
-          boardGameState.piecesFront.push(boardGameState.prevPiece);
-          renderBoard();
+          boardGameState.pieces50x50.push(boardGameState.prevPiece);
         }
       } else {
-        if (boardGameState.prevPiece) {
-          boardGameState.piecesGrid.push(boardGameState.prevPiece);
-          renderBoard();
+        if (boardGameState.isFront) {
+          if (boardGameState.prevPiece) {
+            boardGameState.piecesFront.push(boardGameState.prevPiece);
+            renderBoard();
+          }
+        } else {
+          if (boardGameState.prevPiece) {
+            boardGameState.piecesGrid.push(boardGameState.prevPiece);
+            renderBoard();
+          }
         }
       }
       boardGameState.dragging = null;
@@ -389,12 +454,22 @@ const boardMouseHandlers = {
 
       if (boardGameState.dragging.isEraser) {
         if (boardGameState.isErasing) {
-          if (!boardGameState.isFront) {
-            const idx = boardGameState.piecesGrid.findIndex(
+          if (boardGameState.isBoard50x50) {
+            const idx = boardGameState.pieces50x50.findIndex(
               (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
             );
             if (idx !== -1) {
-              boardGameState.piecesGrid.splice(idx, 1);
+              boardGameState.pieces50x50.splice(idx, 1);
+            }
+          } else {
+            if (!boardGameState.isFront) {
+              const idx = boardGameState.piecesGrid.findIndex(
+                (p) =>
+                  Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
+              );
+              if (idx !== -1) {
+                boardGameState.piecesGrid.splice(idx, 1);
+              }
             }
           }
           boardGameState.isErasing = false;
@@ -425,11 +500,13 @@ const boardMouseHandlers = {
       // Jeśli kliknięto w główną planszę
       if (y >= 0 && y < boardHeight) {
         const isOccupiedSpot = isOccupied(
+          boardGameState.isBoard50x50,
           boardGameState.isFront,
           x,
           y,
           boardGameState.piecesFront,
-          boardGameState.piecesGrid
+          boardGameState.piecesGrid,
+          boardGameState.pieces50x50
         );
 
         if (isOccupiedSpot) {
@@ -452,15 +529,23 @@ const boardMouseHandlers = {
           isPixel: !!boardGameState.dragging.isPixel,
         };
 
-        if (boardGameState.isFront) {
-          boardGameState.piecesFront.push(pieceObj);
-          boardGameState.dragging = null;
-          boardGameState.prevPiece = null;
-        } else {
-          boardGameState.piecesGrid.push(pieceObj);
+        if (boardGameState.isBoard50x50) {
+          boardGameState.pieces50x50.push(pieceObj);
           if (!boardGameState.dragging.isPixel) {
             boardGameState.dragging = null;
             boardGameState.prevPiece = null;
+          }
+        } else {
+          if (boardGameState.isFront) {
+            boardGameState.piecesFront.push(pieceObj);
+            boardGameState.dragging = null;
+            boardGameState.prevPiece = null;
+          } else {
+            boardGameState.piecesGrid.push(pieceObj);
+            if (!boardGameState.dragging.isPixel) {
+              boardGameState.dragging = null;
+              boardGameState.prevPiece = null;
+            }
           }
         }
         showMessage("");
@@ -478,11 +563,13 @@ const boardMouseHandlers = {
         y < codeStartY + boardGameState.codeRows * boardGameState.cellSize
       ) {
         const isOccupiedSpot = isOccupied(
+          boardGameState.isBoard50x50,
           boardGameState.isFront,
           x,
           y,
           boardGameState.piecesFront,
-          boardGameState.piecesGrid
+          boardGameState.piecesGrid,
+          boardGameState.pieces50x50
         );
 
         if (isOccupiedSpot) {
@@ -497,19 +584,25 @@ const boardMouseHandlers = {
           isCodingDisc: isCodingDisc,
           isPixel: !!boardGameState.dragging.isPixel,
         };
-
-        if (boardGameState.isFront) {
-          boardGameState.piecesFront.push(pieceObj);
-          boardGameState.dragging = null;
-          boardGameState.prevPiece = null;
-        } else {
-          boardGameState.piecesGrid.push(pieceObj);
+        if (boardGameState.isBoard50x50) {
+          boardGameState.pieces50x50.push(pieceObj);
           if (!boardGameState.dragging.isPixel) {
             boardGameState.dragging = null;
             boardGameState.prevPiece = null;
           }
+        } else {
+          if (boardGameState.isFront) {
+            boardGameState.piecesFront.push(pieceObj);
+            boardGameState.dragging = null;
+            boardGameState.prevPiece = null;
+          } else {
+            boardGameState.piecesGrid.push(pieceObj);
+            if (!boardGameState.dragging.isPixel) {
+              boardGameState.dragging = null;
+              boardGameState.prevPiece = null;
+            }
+          }
         }
-
         showMessage("");
         renderBoard();
       }
@@ -518,7 +611,7 @@ const boardMouseHandlers = {
   onMouseDown: (e) => {
     // Sprawdź czy mamy wybraną gumkę (tylko na tylnej stronie)
     if (
-      !boardGameState.isFront &&
+      (!boardGameState.isFront || boardGameState.isBoard50x50) &&
       boardGameState.dragging &&
       boardGameState.dragging.isEraser
     ) {
@@ -549,7 +642,7 @@ const boardMouseHandlers = {
 
     // Sprawdź czy mamy wybrany piksel do malowania (tylko na tylnej stronie)
     if (
-      !boardGameState.isFront &&
+      (!boardGameState.isFront || boardGameState.isBoard50x50) &&
       boardGameState.dragging &&
       boardGameState.dragging.isPixel
     ) {
@@ -564,22 +657,27 @@ const boardMouseHandlers = {
         boardGameState.paintColor,
         boardGameState.isFront,
         boardGameState.piecesFront,
-        boardGameState.piecesGrid
+        boardGameState.piecesGrid,
+        boardGameState.pieces50x50,
+        boardGameState.isBoard50x50
       );
       renderBoard();
+
       return;
     }
 
     // Jeśli już trzymamy krążek (nie piksel), nie szukaj nowych elementów do przeciągnięcia
     if (boardGameState.dragging) {
-      if (!boardGameState.isFront) {
+      if (!boardGameState.isFront || boardGameState.isBoard50x50) {
         if (!boardGameState.dragging.isPixel) return;
       } else {
         return;
       }
     }
 
-    const idxTable = boardGameState.isFront
+    const idxTable = boardGameState.isBoard50x50
+      ? boardGameState.pieces50x50
+      : boardGameState.isFront
       ? boardGameState.piecesFront
       : boardGameState.piecesGrid;
 
@@ -589,7 +687,9 @@ const boardMouseHandlers = {
       (p) =>
         Math.abs(p.x - x) < 5 &&
         Math.abs(p.y - y) < 5 &&
-        (boardGameState.isFront || !p.isPixel)
+        (boardGameState.isFront && !boardGameState.isBoard50x50
+          ? true
+          : !p.isPixel)
     );
 
     if (idx !== -1) {
@@ -605,7 +705,9 @@ const boardMouseHandlers = {
 
       boardGameState.prevPiece = { ...idxTable[idx] };
 
-      boardGameState.isFront
+      boardGameState.isBoard50x50
+        ? boardGameState.pieces50x50.splice(idx, 1)
+        : boardGameState.isFront
         ? boardGameState.piecesFront.splice(idx, 1)
         : boardGameState.piecesGrid.splice(idx, 1);
 
@@ -631,7 +733,9 @@ const boardMouseHandlers = {
 
     const { x, y } = getMousePos(e, board, boardGameState.cellSize);
     if (!boardGameState.dragging) {
-      const idxTable = boardGameState.isFront
+      const idxTable = boardGameState.isBoard50x50
+        ? boardGameState.pieces50x50
+        : boardGameState.isFront
         ? boardGameState.piecesFront
         : boardGameState.piecesGrid;
       let idx = idxTable.findIndex(
@@ -643,7 +747,9 @@ const boardMouseHandlers = {
         );
       }
       if (idx !== -1) {
-        if (boardGameState.isFront) {
+        if (boardGameState.isBoard50x50) {
+          boardGameState.pieces50x50.splice(idx, 1);
+        } else if (boardGameState.isFront) {
           boardGameState.piecesFront.splice(idx, 1);
         } else {
           boardGameState.piecesGrid.splice(idx, 1);
@@ -664,7 +770,9 @@ const boardMouseHandlers = {
 
 const uiHandlers = {
   onClearBoard: () => {
-    boardGameState.isFront
+    boardGameState.isBoard50x50
+      ? (boardGameState.pieces50x50.length = 0)
+      : boardGameState.isFront
       ? (boardGameState.piecesFront.length = 0)
       : (boardGameState.piecesGrid.length = 0);
     renderBoard();
@@ -806,7 +914,9 @@ const boardTouchHandlers = {
           boardGameState.paintColor,
           boardGameState.isFront,
           boardGameState.piecesFront,
-          boardGameState.piecesGrid
+          boardGameState.piecesGrid,
+          boardGameState.pieces50x50,
+          boardGameState.isBoard50x50
         )
       ) {
         renderBoard();
@@ -838,11 +948,13 @@ const boardTouchHandlers = {
       const snapY = row * cellSize;
       // Sprawdź czy miejsce jest zajęte lub zablokowane
       const isBlocked = isOccupied(
+        boardGameState.isBoard50x50,
         boardGameState.isFront,
         snapX + boardGameState.cellSize / 2,
         snapY + boardGameState.cellSize / 2,
         boardGameState.piecesFront,
-        boardGameState.piecesGrid
+        boardGameState.piecesGrid,
+        boardGameState.pieces50x50
       );
       if (!isBlocked) {
         touchDraggingPiece.x = snapX + boardGameState.cellSize / 2;
@@ -914,10 +1026,20 @@ initGame();
 document.getElementById("switchBoard").addEventListener("click", () => {
   if (boardGameState.isBoard50x50) {
     boardGameState.isBoard50x50 = false;
+    if (!boardGameState.isFront)
+      document.getElementById("gridSizeSelector").style.display = "block";
+
+    document.getElementById("downloadCoords").style.display = "block";
+    document.getElementById("flipBoard").style.display = "block";
     document.getElementById("switchBoard").innerText = "Mata 50x50";
   } else {
     boardGameState.isBoard50x50 = true;
+    document.getElementById("gridSizeSelector").style.display = "none";
+    document.getElementById("downloadCoords").style.display = "none";
+    document.getElementById("flipBoard").style.display = "none";
     document.getElementById("switchBoard").innerText = "Mata 100x100";
   }
+  updateCanvasSize();
+  drawPicker();
   renderBoard();
 });

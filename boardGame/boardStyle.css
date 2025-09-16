@@ -16,6 +16,15 @@
   left: 10px;
   top: 40px;
 }
+
+/* Specjalne style dla osi maty 50x50 */
+#yAxis.board50x50 {
+  left: 30px;
+  top: 140px;
+  width: 100px;
+  height: 500px;
+}
+
 #xAxis {
   display: flex;
   justify-content: center;
@@ -23,6 +32,13 @@
   position: absolute;
   top: 10px;
   left: 40px;
+}
+
+#xAxis.board50x50 {
+  top: 30px;
+  left: 140px;
+  width: 500px;
+  height: 100px;
 }
 
 .pickerPanel {
@@ -83,6 +99,10 @@
   padding: 40px;
 }
 
+#boardWrapper.board50x50 {
+  padding: 140px 40px 40px 140px;
+}
+
 #boardOverlay {
   position: absolute;
   left: 40px;
@@ -103,7 +123,8 @@
 #clearBoard,
 #flipBoard,
 #downloadBoardPdf,
-#downloadCoords {
+#downloadCoords,
+#switchBoard {
   display: inline-block;
   text-transform: uppercase;
   background: #00a19a;
@@ -122,7 +143,8 @@
 #clearBoard:hover,
 #flipBoard:hover,
 #downloadBoardPdf:hover,
-#downloadCoords:hover {
+#downloadCoords:hover,
+#switchBoard:hover {
   background: #f7a000;
   cursor: pointer;
 }

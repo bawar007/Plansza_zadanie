@@ -26,82 +26,79 @@ export function drawBoard(ctxOverlay, ctxBoard, options) {
   ctxBoard.clearRect(0, 0, ctxBoard.canvas.width, ctxBoard.canvas.height);
   ctxOverlay.clearRect(0, 0, ctxOverlay.canvas.width, ctxOverlay.canvas.height);
 
-  const cellSize = boardGameState.isBoard50x50 ? 100 : boardGameState.cellSize;
+  drawGrid(ctxBoard, boardRows, boardRows, boardGameState.cellSize, 0, isFront);
 
-  drawGrid(ctxBoard, boardRows, boardRows, cellSize, 0, isFront);
-
-  if (boardGameState.isBoard50x50) {
-  } else {
-    if (!isFront) {
-      drawCodeGrid(
+  if (!isFront) {
+    drawCodeGrid(
+      ctxBoard,
+      boardGameState.codeRows,
+      boardRows,
+      boardGameState.cellSize,
+      null,
+      false,
+      codeSectionY,
+      0
+    );
+    const circleX = 0 * boardGameState.cellSize + boardGameState.cellSize / 2;
+    const circleY =
+      boardRows * boardGameState.cellSize +
+      boardGameState.codeMargin +
+      0 * boardGameState.cellSize +
+      boardGameState.cellSize / 2;
+    if (boardGameState.lockedImg) {
+      drawCirclePiece(
         ctxBoard,
-        boardGameState.codeRows,
-        boardRows,
+        circleX,
+        circleY,
         boardGameState.cellSize,
-        null,
-        false,
-        codeSectionY,
-        0
+        "#4466b0",
+        boardGameState.lockedImg
       );
-      const circleX = 0 * boardGameState.cellSize + boardGameState.cellSize / 2;
-      const circleY =
-        boardRows * boardGameState.cellSize +
-        boardGameState.codeMargin +
-        0 * boardGameState.cellSize +
-        boardGameState.cellSize / 2;
-      if (boardGameState.lockedImg) {
+    } else {
+      const newLockedImg = new window.Image();
+      newLockedImg.src = "../assets/symbole_do_kodowania/img4.png";
+      newLockedImg.onload = function () {
+        boardGameState.lockedImg = newLockedImg;
+
         drawCirclePiece(
           ctxBoard,
           circleX,
           circleY,
           boardGameState.cellSize,
           "#4466b0",
-          boardGameState.lockedImg
+          newLockedImg
         );
-      } else {
-        const newLockedImg = new window.Image();
-        newLockedImg.src = "../assets/symbole_do_kodowania/img4.png";
-        newLockedImg.onload = function () {
-          boardGameState.lockedImg = newLockedImg;
-
-          drawCirclePiece(
-            ctxBoard,
-            circleX,
-            circleY,
-            boardGameState.cellSize,
-            "#4466b0",
-            newLockedImg
-          );
-        };
-      }
-
-      // --- Linie przez środek planszy (tylko dla back) ---
-      ctxBoard.save();
-      ctxBoard.strokeStyle = "#ff0000";
-      ctxBoard.lineWidth = 2;
-
-      const midCol = boardRows / 2;
-      const midRow = boardRows / 2;
-
-      // pionowa linia przez środek
-      ctxBoard.beginPath();
-      ctxBoard.moveTo(midCol * boardGameState.cellSize, 0);
-      ctxBoard.lineTo(
-        midCol * boardGameState.cellSize,
-        boardHeight - 4 * boardGameState.cellSize
-      );
-      ctxBoard.stroke();
-
-      // pozioma linia przez środek
-      ctxBoard.beginPath();
-      ctxBoard.moveTo(0, midRow * boardGameState.cellSize);
-      ctxBoard.lineTo(boardWidth, midRow * boardGameState.cellSize);
-      ctxBoard.stroke();
-
-      ctxBoard.restore();
+      };
     }
   }
   drawPicture(ctxBoard, 0, 0, pieces);
+
+  if (!boardGameState.isBoard50x50 && !isFront) {
+    // --- Linie przez środek planszy (tylko dla back) ---
+    ctxBoard.save();
+    ctxBoard.strokeStyle = "#ff0000";
+    ctxBoard.lineWidth = 3;
+
+    const midCol = boardRows / 2;
+    const midRow = boardRows / 2;
+
+    // pionowa linia przez środek
+    ctxBoard.beginPath();
+    ctxBoard.moveTo(midCol * boardGameState.cellSize, 0);
+    ctxBoard.lineTo(
+      midCol * boardGameState.cellSize,
+      boardHeight - 4 * boardGameState.cellSize
+    );
+    ctxBoard.stroke();
+
+    // pozioma linia przez środek
+    ctxBoard.beginPath();
+    ctxBoard.moveTo(0, midRow * boardGameState.cellSize);
+    ctxBoard.lineTo(boardWidth, midRow * boardGameState.cellSize);
+    ctxBoard.stroke();
+
+    ctxBoard.restore();
+  }
 }
 
 export function drawPicker() {
@@ -132,11 +129,14 @@ export function drawPicker() {
     const noColoring = section.items.filter((item) => item.color !== null);
 
     const createBtn = (item, color) => {
-      const borderRadius = boardGameState.isFront
-        ? "50%"
-        : item.isPixel
-        ? "0"
-        : "50%";
+      const borderRadius =
+        boardGameState.isBoard50x50 && item.isPixel
+          ? "0%"
+          : boardGameState.isFront
+          ? "50%"
+          : item.isPixel
+          ? "0"
+          : "50%";
 
       const imgBtn = document.createElement("button");
       imgBtn.className = "imgButton";
@@ -166,7 +166,10 @@ export function drawPicker() {
     };
 
     // Dodaj gumkę tylko w sekcji Kolorowe piksele i tylko na drugiej stronie maty
-    if (!boardGameState.isFront && section.name === "Kolorowe piksele") {
+    if (
+      (boardGameState.isBoard50x50 || !boardGameState.isFront) &&
+      section.name === "Kolorowe piksele"
+    ) {
       const eraserBtn = document.createElement("button");
       eraserBtn.className = "imgButton";
       eraserBtn.title = "Gumka";
@@ -248,46 +251,92 @@ export function drawSquarePiece(ctx, x, y, size, color, img) {
   }
 }
 
-export function drawLabels(board) {
-  // Oś Y
+export function drawLabels(board, height, width) {
   const yAxis = document.getElementById("yAxis");
-  yAxis.innerHTML = "";
-  yAxis.style.height =
-    board.height +
-    boardGameState.cellSize * (boardGameState.codeRows + 1) +
-    "px";
-  let k = 1;
-  for (
-    let i = 1;
-    i <= boardGameState.backSizeRows + boardGameState.codeRows + 1;
-    i++
-  ) {
-    const div = createElement();
-    if (i > boardGameState.backSizeRows + 1) {
-      div.textContent = "K" + k;
-      k++;
-    } else {
-      if (i !== boardGameState.backSizeRows + 1) div.textContent = i;
-    }
-    div.style.height = board.height / boardGameState.backSizeRows + "px";
-    div.style.width = "28px";
-    yAxis.appendChild(div);
-  }
-
-  // Oś X
   const xAxis = document.getElementById("xAxis");
+  yAxis.innerHTML = "";
   xAxis.innerHTML = "";
-  xAxis.style.width = board.width + "px";
-  for (let i = 0; i < boardGameState.backSizeRows; i++) {
-    const div = createElement();
-    div.textContent = String.fromCharCode(65 + i);
-    div.style.width = board.width / boardGameState.backSizeRows + "px";
-    xAxis.appendChild(div);
-  }
 
-  const showAxes = !boardGameState.isFront;
-  yAxis.style.display = showAxes ? "flex" : "none";
-  xAxis.style.display = showAxes ? "flex" : "none";
+  if (boardGameState.isBoard50x50) {
+    // Dodaj klasy CSS dla maty 50x50
+    yAxis.className = "board50x50";
+    xAxis.className = "board50x50";
+
+    // Dla maty 50x50 - osie z obrazkami
+    yAxis.style.height = "500px";
+    yAxis.style.width = "100px";
+    xAxis.style.height = "100px";
+    xAxis.style.width = "500px";
+
+    // Oś Y - obrazki img1.png do img5.png (pionowo)
+    for (let i = 1; i <= 5; i++) {
+      const imgElement = document.createElement("img");
+      imgElement.src = `assets/kolorowe_sudoku/img${i}.png`;
+      imgElement.style.width = "100px";
+      imgElement.style.height = "100px";
+      imgElement.style.display = "block";
+      imgElement.style.border = "1px solid #ccc";
+      yAxis.appendChild(imgElement);
+    }
+
+    // Oś X - obrazki img6.png do img10.png (poziomo)
+    for (let i = 6; i <= 10; i++) {
+      const imgElement = document.createElement("img");
+      imgElement.src = `assets/kolorowe_sudoku/img${i}.png`;
+      imgElement.style.width = "100px";
+      imgElement.style.height = "100px";
+      imgElement.style.display = "inline-block";
+      imgElement.style.border = "1px solid #ccc";
+      xAxis.appendChild(imgElement);
+    }
+
+    yAxis.style.display = "flex";
+    yAxis.style.flexDirection = "column";
+    xAxis.style.display = "flex";
+    xAxis.style.flexDirection = "row";
+  } else {
+    // Usuń klasy CSS dla maty 50x50
+    yAxis.className = "";
+    xAxis.className = "";
+
+    // Dla zwykłej maty - obecna logika z tekstem
+    yAxis.style.height = height + "px";
+    yAxis.style.width = "28px";
+    xAxis.style.width = width + "px";
+    xAxis.style.height = "auto";
+
+    // Dla maty back oblicz liczbę elementów i ich wysokość
+    const totalElements =
+      boardGameState.backSizeRows + boardGameState.codeRows + 1;
+    const elementHeight = height / totalElements;
+
+    let k = 1;
+    for (let i = 1; i <= totalElements; i++) {
+      const div = createElement();
+      if (i > boardGameState.backSizeRows + 1) {
+        div.textContent = "K" + k;
+        k++;
+      } else {
+        if (i !== boardGameState.backSizeRows + 1) div.textContent = i;
+      }
+      div.style.height = elementHeight + "px";
+      div.style.width = "28px";
+      yAxis.appendChild(div);
+    }
+
+    for (let i = 0; i < boardGameState.backSizeRows; i++) {
+      const div = createElement();
+      div.textContent = String.fromCharCode(65 + i);
+      div.style.width = width / boardGameState.backSizeRows + "px";
+      xAxis.appendChild(div);
+    }
+
+    const showAxes = !boardGameState.isFront && !boardGameState.isBoard50x50;
+    yAxis.style.display = showAxes ? "flex" : "none";
+    yAxis.style.flexDirection = "column";
+    xAxis.style.display = showAxes ? "flex" : "none";
+    xAxis.style.flexDirection = "row";
+  }
 
   function createElement() {
     const div = document.createElement("div");
@@ -363,7 +412,7 @@ function drawGrid(ctx, rows, cols, cellSize, marginForAxes, isFront) {
   let x, y, color;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      if (isFront) {
+      if (isFront && !boardGameState.isBoard50x50) {
         const blockRow = Math.floor(r / 3);
         const blockCol = Math.floor(c / 3);
         color = blockColors?.[blockRow]?.[blockCol] ?? "#fff";
@@ -632,7 +681,9 @@ async function addCoordinatesToPdf(pdf, coordToPrint, pdfH, pdfW, imgH) {
 export async function drawPdfFile(coordToPrint) {
   const isFront = boardGameState.isFront;
 
-  const sizeRows = isFront
+  const sizeRows = boardGameState.isBoard50x50
+    ? 5
+    : isFront
     ? boardGameState.frontSizeRows
     : boardGameState.backSizeRows;
 
@@ -643,7 +694,7 @@ export async function drawPdfFile(coordToPrint) {
     : sizeRows * boardGameState.cellSize;
   const codeSectionY = boardHeight + boardGameState.codeMargin;
   const codeSectionHeight = codeRows * boardGameState.cellSize;
-  const marginForAxes = !isFront ? 40 : 0;
+  const marginForAxes = boardGameState.isBoard50x50 ? 140 : !isFront ? 40 : 0;
 
   const tmpCanvas = document.createElement("canvas");
   tmpCanvas.width = boardWidth + marginForAxes;
@@ -682,44 +733,9 @@ export async function drawPdfFile(coordToPrint) {
     tmpCtx.strokeRect(marginForAxes, marginForAxes, boardWidth, boardHeight);
     tmpCtx.restore();
   }
-  if (!isFront) {
-    // --- Linie przez środek planszy (tylko dla back) ---
-    tmpCtx.save();
-    tmpCtx.strokeStyle = "#ff0000";
-    tmpCtx.lineWidth = 2;
-
-    const midCol = sizeRows / 2;
-    const midRow = sizeRows / 2;
-
-    // pionowa linia przez środek
-    tmpCtx.beginPath();
-    tmpCtx.moveTo(
-      midCol * boardGameState.cellSize + marginForAxes,
-      marginForAxes
-    );
-    tmpCtx.lineTo(
-      midCol * boardGameState.cellSize + marginForAxes,
-      sizeRows * boardGameState.cellSize + marginForAxes
-    );
-    tmpCtx.stroke();
-
-    // pozioma linia przez środek
-    tmpCtx.beginPath();
-    tmpCtx.moveTo(
-      marginForAxes,
-      midRow * boardGameState.cellSize + marginForAxes
-    );
-    tmpCtx.lineTo(
-      boardWidth + marginForAxes,
-      midRow * boardGameState.cellSize + 40
-    );
-    tmpCtx.stroke();
-
-    tmpCtx.restore();
-  }
 
   // --- RYSOWANIE SEKCJI KODOWANIA (tylko back) ---
-  if (!isFront && !coordToPrint) {
+  if (!boardGameState.isBoard50x50 && !isFront && !coordToPrint) {
     drawCodeGrid(
       tmpCtx,
       codeRows,
@@ -751,11 +767,49 @@ export async function drawPdfFile(coordToPrint) {
 
   // --- RYSOWANIE KRĄŻKÓW/PIXELI ---
   if (!coordToPrint) {
-    const pieces = isFront
+    const pieces = boardGameState.isBoard50x50
+      ? boardGameState.pieces50x50
+      : isFront
       ? boardGameState.piecesFront
       : boardGameState.piecesGrid;
 
     drawPicture(tmpCtx, marginForAxes, marginForAxes, pieces);
+  }
+
+  if (!isFront && !boardGameState.isBoard50x50) {
+    // --- Linie przez środek planszy (tylko dla back) ---
+    tmpCtx.save();
+    tmpCtx.strokeStyle = "#ff0000";
+    tmpCtx.lineWidth = 3;
+
+    const midCol = sizeRows / 2;
+    const midRow = sizeRows / 2;
+
+    // pionowa linia przez środek
+    tmpCtx.beginPath();
+    tmpCtx.moveTo(
+      midCol * boardGameState.cellSize + marginForAxes,
+      marginForAxes
+    );
+    tmpCtx.lineTo(
+      midCol * boardGameState.cellSize + marginForAxes,
+      sizeRows * boardGameState.cellSize + marginForAxes
+    );
+    tmpCtx.stroke();
+
+    // pozioma linia przez środek
+    tmpCtx.beginPath();
+    tmpCtx.moveTo(
+      marginForAxes,
+      midRow * boardGameState.cellSize + marginForAxes
+    );
+    tmpCtx.lineTo(
+      boardWidth + marginForAxes,
+      midRow * boardGameState.cellSize + 40
+    );
+    tmpCtx.stroke();
+
+    tmpCtx.restore();
   }
 
   // Zamień canvas na obrazek

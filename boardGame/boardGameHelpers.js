@@ -1,15 +1,29 @@
 import { boardGameState } from "./boardGameState.js";
-export function isOccupied(isFront, x, y, piecesFront, piecesGrid) {
-  if (isFront) {
-    // Na przedniej stronie wszystkie elementy (krążki + piksele) blokują
-    return piecesFront.some(
-      (p) => Math.abs(p.x - x) < 3 && Math.abs(p.y - y) < 3
-    );
-  } else {
-    // Na tylnej stronie tylko krążki blokują (piksele są w tle)
-    return piecesGrid.some(
+export function isOccupied(
+  is50x50,
+  isFront,
+  x,
+  y,
+  piecesFront,
+  piecesGrid,
+  pieces50x50
+) {
+  if (is50x50) {
+    return pieces50x50.some(
       (p) => Math.abs(p.x - x) < 3 && Math.abs(p.y - y) < 3 && !p.isPixel
     );
+  } else {
+    if (isFront) {
+      // Na przedniej stronie wszystkie elementy (krążki + piksele) blokują
+      return piecesFront.some(
+        (p) => Math.abs(p.x - x) < 3 && Math.abs(p.y - y) < 3
+      );
+    } else {
+      // Na tylnej stronie tylko krążki blokują (piksele są w tle)
+      return piecesGrid.some(
+        (p) => Math.abs(p.x - x) < 3 && Math.abs(p.y - y) < 3 && !p.isPixel
+      );
+    }
   }
 }
 
@@ -107,9 +121,18 @@ export function wrapText(pdf, text, maxWidth) {
   return lines;
 }
 
-export function addPixelAt(x, y, color, isFront, piecesFront, piecesGrid) {
+export function addPixelAt(
+  x,
+  y,
+  color,
+  isFront,
+  piecesFront,
+  piecesGrid,
+  pieces50x50,
+  is50x50
+) {
   // Blokada: nie maluj w przestrzeni między planszą a blokiem kodu oraz na pierwszym polu w bloku kod
-  if (!isFront) {
+  if (!isFront && !is50x50) {
     // Parametry planszy
     const cellSize = boardGameState.cellSize;
     const boardHeight = boardGameState.backSizeRows * cellSize;
@@ -133,7 +156,7 @@ export function addPixelAt(x, y, color, isFront, piecesFront, piecesGrid) {
     }
   }
 
-  const idxTable = isFront ? piecesFront : piecesGrid;
+  const idxTable = is50x50 ? pieces50x50 : isFront ? piecesFront : piecesGrid;
   const existingPixelIndex = idxTable.findIndex(
     (p) => Math.abs(p.x - x) < 2 && Math.abs(p.y - y) < 2 && p.isPixel
   );
@@ -154,11 +177,16 @@ export function addPixelAt(x, y, color, isFront, piecesFront, piecesGrid) {
     isPixel: true,
   };
 
-  if (isFront) {
-    piecesFront.push(pixelObj);
-  } else {
-    piecesGrid.push(pixelObj);
-  }
+  if (is50x50) {
+    console.log(pixelObj);
 
+    pieces50x50.push(pixelObj);
+  } else {
+    if (isFront) {
+      piecesFront.push(pixelObj);
+    } else {
+      piecesGrid.push(pixelObj);
+    }
+  }
   return true;
 }
