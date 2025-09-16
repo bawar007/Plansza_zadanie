@@ -178,8 +178,6 @@ export function addPixelAt(
   };
 
   if (is50x50) {
-    console.log(pixelObj);
-
     pieces50x50.push(pixelObj);
   } else {
     if (isFront) {

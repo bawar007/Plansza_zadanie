@@ -251,7 +251,7 @@ export function drawSquarePiece(ctx, x, y, size, color, img) {
   }
 }
 
-export function drawLabels(board, height, width) {
+export function drawLabels(height, width) {
   const yAxis = document.getElementById("yAxis");
   const xAxis = document.getElementById("xAxis");
   yAxis.innerHTML = "";
@@ -270,24 +270,36 @@ export function drawLabels(board, height, width) {
 
     // Oś Y - obrazki img1.png do img5.png (pionowo)
     for (let i = 1; i <= 5; i++) {
+      const imgWrapper = document.createElement("div");
+      imgWrapper.style.height = "100px";
+      imgWrapper.style.width = "100px";
+      imgWrapper.style.display = "flex";
+      imgWrapper.style.alignItems = "center";
+      imgWrapper.style.justifyContent = "flex-end";
       const imgElement = document.createElement("img");
-      imgElement.src = `assets/kolorowe_sudoku/img${i}.png`;
-      imgElement.style.width = "100px";
-      imgElement.style.height = "100px";
+      imgElement.src = `assets/mata50x50/osY/osY_img${i}.png`;
+      imgElement.style.width = "60px";
+      imgElement.style.height = "60px";
       imgElement.style.display = "block";
-      imgElement.style.border = "1px solid #ccc";
-      yAxis.appendChild(imgElement);
+      imgWrapper.appendChild(imgElement);
+      yAxis.appendChild(imgWrapper);
     }
 
     // Oś X - obrazki img6.png do img10.png (poziomo)
-    for (let i = 6; i <= 10; i++) {
+    for (let i = 1; i <= 5; i++) {
+      const imgWrapper = document.createElement("div");
+      imgWrapper.style.height = "100px";
+      imgWrapper.style.width = "100px";
+      imgWrapper.style.display = "flex";
+      imgWrapper.style.alignItems = "flex-end";
+      imgWrapper.style.justifyContent = "center";
       const imgElement = document.createElement("img");
-      imgElement.src = `assets/kolorowe_sudoku/img${i}.png`;
-      imgElement.style.width = "100px";
-      imgElement.style.height = "100px";
+      imgElement.src = `assets/mata50x50/osX/osX_img${i}.png`;
+      imgElement.style.width = "90px";
+      imgElement.style.height = "90px";
       imgElement.style.display = "inline-block";
-      imgElement.style.border = "1px solid #ccc";
-      xAxis.appendChild(imgElement);
+      imgWrapper.appendChild(imgElement);
+      xAxis.appendChild(imgWrapper);
     }
 
     yAxis.style.display = "flex";
@@ -404,6 +416,66 @@ function drawAxes(
     }
   }
   ctx.restore();
+}
+
+async function drawAxes50x50(ctx, margin, cellSize) {
+  // Ładuj i rysuj obrazki dla osi Y (img1.png do img5.png)
+  for (let i = 1; i <= 5; i++) {
+    try {
+      const img = new Image();
+      img.src = `assets/mata50x50/osY/osY_img${i}.png`;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      const x = margin - cellSize;
+      const y = margin + (i - 1) * cellSize;
+      ctx.drawImage(
+        img,
+        x + cellSize * 0.2,
+        y + cellSize * 0.2,
+        cellSize * 0.6,
+        cellSize * 0.6
+      );
+    } catch (error) {
+      console.warn(`Nie można załadować obrazu img${i}.png`);
+      // Rysuj prostokąt jako fallback
+      ctx.fillStyle = "#ddd";
+      ctx.fillRect(
+        margin - cellSize,
+        margin + (i - 1) * cellSize,
+        cellSize,
+        cellSize
+      );
+    }
+  }
+
+  // Ładuj i rysuj obrazki dla osi X (img6.png do img10.png)
+  for (let i = 1; i <= 5; i++) {
+    try {
+      const img = new Image();
+      img.src = `assets/mata50x50/osX/osX_img${i}.png`;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      const x = margin + (i - 1) * cellSize;
+      const y = margin - cellSize;
+      ctx.drawImage(img, x, y, cellSize, cellSize);
+    } catch (error) {
+      console.warn(`Nie można załadować obrazu img${i}.png`);
+      // Rysuj prostokąt jako fallback
+      ctx.fillStyle = "#ddd";
+      ctx.fillRect(
+        margin + (i - 1) * cellSize,
+        margin - cellSize,
+        cellSize,
+        cellSize
+      );
+    }
+  }
 }
 
 function drawGrid(ctx, rows, cols, cellSize, marginForAxes, isFront) {
@@ -705,7 +777,10 @@ export async function drawPdfFile(coordToPrint) {
   tmpCtx.fillStyle = "#fff";
   tmpCtx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
 
-  if (!isFront) {
+  // Rysuj osie - różnie dla maty 50x50 i standardowej
+  if (boardGameState.isBoard50x50) {
+    await drawAxes50x50(tmpCtx, marginForAxes, boardGameState.cellSize);
+  } else if (!isFront) {
     drawAxes(
       tmpCtx,
       sizeRows,

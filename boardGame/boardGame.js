@@ -41,8 +41,8 @@ gameMain.innerHTML = `
       <option value="20">20 x 20</option>
     </select>
     <button id="switchBoard">Mata 50x50</button>
-    <button id="clearBoard">Wyczyść stronę</button>
     <button id="flipBoard">Obróć matę</button>
+    <button id="clearBoard">Wyczyść stronę</button>
     <button id="downloadBoardPdf">Pobierz jako PDF</button>
     <button id="downloadCoords" style="display: none">Pobierz koordynaty</button>
   </div>
@@ -110,7 +110,7 @@ function updateCanvasSize() {
   boardOverlay.width = boardWidth;
   boardOverlay.height = boardHeight;
 
-  drawLabels(board, boardHeight, boardWidth);
+  drawLabels(boardHeight, boardWidth);
 }
 
 function renderBoard() {
@@ -123,6 +123,8 @@ function renderBoard() {
       boardWidth: 5 * boardGameState.cellSize,
       boardHeight: 5 * boardGameState.cellSize,
     });
+    board.style.border = "none";
+    boardWrapper.style.alignItems = "flex-start";
   } else {
     if (boardGameState.isFront) {
       drawBoard(ctxOverlay, ctxBoard, {
@@ -245,7 +247,6 @@ const boardMouseHandlers = {
       : isFront
       ? frontSizeRows
       : backSizeRows + 4;
-    console.log(cells);
 
     // Sprawdź różne warunki blokowania
     let isBlocked = false;
@@ -1026,10 +1027,11 @@ initGame();
 document.getElementById("switchBoard").addEventListener("click", () => {
   if (boardGameState.isBoard50x50) {
     boardGameState.isBoard50x50 = false;
-    if (!boardGameState.isFront)
+    if (!boardGameState.isFront) {
       document.getElementById("gridSizeSelector").style.display = "block";
+      document.getElementById("downloadCoords").style.display = "block";
+    }
 
-    document.getElementById("downloadCoords").style.display = "block";
     document.getElementById("flipBoard").style.display = "block";
     document.getElementById("switchBoard").innerText = "Mata 50x50";
   } else {

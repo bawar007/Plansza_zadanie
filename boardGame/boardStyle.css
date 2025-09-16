@@ -197,6 +197,9 @@
     background-color: white;
     height: auto;
   }
+  button {
+    font-size: 20px !important;
+  }
   #picker {
     height: 250px;
   }
