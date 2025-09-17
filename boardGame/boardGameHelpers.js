@@ -131,15 +131,20 @@ export function addPixelAt(
   pieces50x50,
   is50x50
 ) {
-  // Blokada: nie maluj w przestrzeni między planszą a blokiem kodu oraz na pierwszym polu w bloku kod
-  if (!isFront && !is50x50) {
-    // Parametry planszy
+  if (!isFront || is50x50) {
     const cellSize = boardGameState.cellSize;
-    const boardHeight = boardGameState.backSizeRows * cellSize;
+    const boardHeight = (is50x50 ? 5 : boardGameState.backSizeRows) * cellSize;
     const codeMargin = boardGameState.codeMargin;
     const codeRows = boardGameState.codeRows;
-
     // Przestrzeń między planszą a blokiem kodu
+    if (
+      x < 0 ||
+      y < 0 ||
+      x >= boardHeight ||
+      y >= boardHeight + codeMargin + codeRows * cellSize
+    ) {
+      return false;
+    }
     if (y >= boardHeight && y < boardHeight + codeMargin) {
       return false;
     }

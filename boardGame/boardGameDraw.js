@@ -28,7 +28,7 @@ export function drawBoard(ctxOverlay, ctxBoard, options) {
 
   drawGrid(ctxBoard, boardRows, boardRows, boardGameState.cellSize, 0, isFront);
 
-  if (!isFront) {
+  if (!isFront || boardGameState.isBoard50x50) {
     drawCodeGrid(
       ctxBoard,
       boardGameState.codeRows,
@@ -108,7 +108,17 @@ export function drawPicker() {
   const sectionSelect = document.createElement("select");
   sectionSelect.className = "sectionSelector";
 
-  sections.forEach((section, secIdx) => {
+  // Posortuj sekcje tak, aby "Kolorowe piksele" były zawsze pierwsze,
+  // a reszta zachowała oryginalną kolejność.
+  const sectionsFinal = boardGameState.isBoard50x50
+    ? [...sections].sort((a, b) => {
+        if (a.name === "Kodowanie dla najmłodszych") return -1;
+        if (b.name === "Kodowanie dla najmłodszych") return 1;
+        return 0;
+      })
+    : sections;
+
+  sectionsFinal.forEach((section, secIdx) => {
     const option = document.createElement("option");
     option.value = secIdx;
     option.textContent = section.name;
@@ -122,7 +132,7 @@ export function drawPicker() {
 
   function showImages(secIdx) {
     imagesDiv.innerHTML = "";
-    const section = sections[secIdx];
+    const section = sectionsFinal[secIdx];
     const colors = section.backgroundColors || false;
 
     const forColoring = section.items.filter((item) => item.color === null);
@@ -166,23 +176,21 @@ export function drawPicker() {
     };
 
     // Dodaj gumkę tylko w sekcji Kolorowe piksele i tylko na drugiej stronie maty
-    if (
-      (boardGameState.isBoard50x50 || !boardGameState.isFront) &&
-      section.name === "Kolorowe piksele"
-    ) {
+    if (section.name === "Kolorowe piksele") {
       const eraserBtn = document.createElement("button");
       eraserBtn.className = "imgButton";
       eraserBtn.title = "Gumka";
       eraserBtn.style.width = "75px";
       eraserBtn.style.height = "75px";
-      eraserBtn.style.borderRadius = "0";
+      eraserBtn.style.borderRadius =
+        boardGameState.isFront && !boardGameState.isBoard50x50 ? "50%" : "0";
       eraserBtn.style.border = "2px solid #333";
       eraserBtn.style.position = "relative";
       eraserBtn.style.margin = "5px";
       eraserBtn.style.background = "#eee";
       eraserBtn.innerHTML = "<span style='font-size:32px;'>🧽</span>";
       eraserBtn.onclick = () => {
-        boardGameState.dragging = { isEraser: true };
+        boardGameState.dragging = { isEraser: true, img: "/assets/eraser.png" };
         boardGameState.isPainting = false;
         boardGameState.paintColor = null;
       };
@@ -216,7 +224,17 @@ export function drawCirclePiece(ctx, x, y, size, color, img) {
   ctx.stroke();
   ctx.restore();
 
-  if (img) {
+  // Rysuj obraz tylko jeśli to prawidłowy typ zasobu graficznego
+  const isDrawableImage = (val) => {
+    return (
+      val instanceof HTMLImageElement ||
+      val instanceof HTMLCanvasElement ||
+      (typeof ImageBitmap !== "undefined" && val instanceof ImageBitmap) ||
+      (typeof OffscreenCanvas !== "undefined" && val instanceof OffscreenCanvas)
+    );
+  };
+
+  if (isDrawableImage(img)) {
     const imgSize = size * 0.8;
     ctx.save();
     ctx.beginPath();
@@ -241,7 +259,16 @@ export function drawSquarePiece(ctx, x, y, size, color, img) {
   ctx.stroke();
   ctx.restore();
 
-  if (img) {
+  const isDrawableImage = (val) => {
+    return (
+      val instanceof HTMLImageElement ||
+      val instanceof HTMLCanvasElement ||
+      (typeof ImageBitmap !== "undefined" && val instanceof ImageBitmap) ||
+      (typeof OffscreenCanvas !== "undefined" && val instanceof OffscreenCanvas)
+    );
+  };
+
+  if (isDrawableImage(img)) {
     ctx.save();
     ctx.beginPath();
     ctx.rect(left, top, size, size);
@@ -263,26 +290,39 @@ export function drawLabels(height, width) {
     xAxis.className = "board50x50";
 
     // Dla maty 50x50 - osie z obrazkami
-    yAxis.style.height = "500px";
+    yAxis.style.height = height + "px";
     yAxis.style.width = "100px";
     xAxis.style.height = "100px";
-    xAxis.style.width = "500px";
+    xAxis.style.width = width + "px";
 
     // Oś Y - obrazki img1.png do img5.png (pionowo)
-    for (let i = 1; i <= 5; i++) {
-      const imgWrapper = document.createElement("div");
-      imgWrapper.style.height = "100px";
-      imgWrapper.style.width = "100px";
-      imgWrapper.style.display = "flex";
-      imgWrapper.style.alignItems = "center";
-      imgWrapper.style.justifyContent = "flex-end";
-      const imgElement = document.createElement("img");
-      imgElement.src = `assets/mata50x50/osY/osY_img${i}.png`;
-      imgElement.style.width = "60px";
-      imgElement.style.height = "60px";
-      imgElement.style.display = "block";
-      imgWrapper.appendChild(imgElement);
-      yAxis.appendChild(imgWrapper);
+    for (let i = 1; i <= 9; i++) {
+      if (i <= 5) {
+        const imgWrapper = document.createElement("div");
+        imgWrapper.style.height = "100px";
+        imgWrapper.style.width = "100px";
+        imgWrapper.style.display = "flex";
+        imgWrapper.style.alignItems = "center";
+        imgWrapper.style.justifyContent = "flex-end";
+        const imgElement = document.createElement("img");
+        imgElement.src = `assets/mata50x50/osY/osY_img${i}.png`;
+        imgElement.style.width = "60px";
+        imgElement.style.height = "60px";
+        imgElement.style.display = "block";
+        imgWrapper.appendChild(imgElement);
+        yAxis.appendChild(imgWrapper);
+      } else {
+        const imgWrapper = document.createElement("div");
+        imgWrapper.style.height = "100px";
+        imgWrapper.style.width = "100px";
+        imgWrapper.style.display = "flex";
+        imgWrapper.style.alignItems = "center";
+        imgWrapper.style.justifyContent = "flex-end";
+        imgWrapper.style.fontWeight = "bold";
+        imgWrapper.style.fontSize = "16px";
+        imgWrapper.innerText = i === 6 ? "" : `K${i - 6}`;
+        yAxis.appendChild(imgWrapper);
+      }
     }
 
     // Oś X - obrazki img6.png do img10.png (poziomo)
@@ -420,34 +460,50 @@ function drawAxes(
 
 async function drawAxes50x50(ctx, margin, cellSize) {
   // Ładuj i rysuj obrazki dla osi Y (img1.png do img5.png)
-  for (let i = 1; i <= 5; i++) {
-    try {
-      const img = new Image();
-      img.src = `assets/mata50x50/osY/osY_img${i}.png`;
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-      });
+  for (let i = 1; i <= 9; i++) {
+    if (i <= 5) {
+      try {
+        const img = new Image();
+        img.src = `assets/mata50x50/osY/osY_img${i}.png`;
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
 
+        const x = margin - cellSize;
+        const y = margin + (i - 1) * cellSize;
+        ctx.drawImage(
+          img,
+          x + cellSize * 0.2,
+          y + cellSize * 0.2,
+          cellSize * 0.6,
+          cellSize * 0.6
+        );
+      } catch (error) {
+        console.warn(`Nie można załadować obrazu img${i}.png`);
+        // Rysuj prostokąt jako fallback
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(
+          margin - cellSize,
+          margin + (i - 1) * cellSize,
+          cellSize,
+          cellSize
+        );
+      }
+    } else {
       const x = margin - cellSize;
       const y = margin + (i - 1) * cellSize;
-      ctx.drawImage(
-        img,
-        x + cellSize * 0.2,
-        y + cellSize * 0.2,
-        cellSize * 0.6,
-        cellSize * 0.6
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(x, y, cellSize, cellSize);
+      ctx.fillStyle = "#4a6792";
+      ctx.font = "bold 20px Arial";
+      ctx.textAlign = "right";
+      ctx.fillText(
+        i === 6 ? "" : `K${i - 6}`,
+        x + cellSize * 0.8,
+        y + cellSize * 0.6
       );
-    } catch (error) {
-      console.warn(`Nie można załadować obrazu img${i}.png`);
-      // Rysuj prostokąt jako fallback
-      ctx.fillStyle = "#ddd";
-      ctx.fillRect(
-        margin - cellSize,
-        margin + (i - 1) * cellSize,
-        cellSize,
-        cellSize
-      );
+      ctx.save();
     }
   }
 
@@ -467,7 +523,7 @@ async function drawAxes50x50(ctx, margin, cellSize) {
     } catch (error) {
       console.warn(`Nie można załadować obrazu img${i}.png`);
       // Rysuj prostokąt jako fallback
-      ctx.fillStyle = "#ddd";
+      ctx.fillStyle = "#fff";
       ctx.fillRect(
         margin + (i - 1) * cellSize,
         margin - cellSize,
@@ -766,6 +822,7 @@ export async function drawPdfFile(coordToPrint) {
     : sizeRows * boardGameState.cellSize;
   const codeSectionY = boardHeight + boardGameState.codeMargin;
   const codeSectionHeight = codeRows * boardGameState.cellSize;
+
   const marginForAxes = boardGameState.isBoard50x50 ? 140 : !isFront ? 40 : 0;
 
   const tmpCanvas = document.createElement("canvas");
@@ -809,8 +866,8 @@ export async function drawPdfFile(coordToPrint) {
     tmpCtx.restore();
   }
 
-  // --- RYSOWANIE SEKCJI KODOWANIA (tylko back) ---
-  if (!boardGameState.isBoard50x50 && !isFront && !coordToPrint) {
+  // --- RYSOWANIE SEKCJI KODOWANIA (back i 50x50) ---
+  if ((!isFront || boardGameState.isBoard50x50) && !coordToPrint) {
     drawCodeGrid(
       tmpCtx,
       codeRows,
@@ -893,7 +950,11 @@ export async function drawPdfFile(coordToPrint) {
   const pdfH = 297;
 
   // Obrazek na 70% szerokości strony
-  const imgW = coordToPrint ? pdfW * 0.7 : pdfW * 0.9;
+  const imgW = coordToPrint
+    ? pdfW * 0.7
+    : boardGameState.isBoard50x50
+    ? pdfW * 0.55
+    : pdfW * 0.9;
   const scale = imgW / tmpCanvas.width;
   const imgH = tmpCanvas.height * scale;
   const offsetX = (pdfW - imgW) / 2;
@@ -930,7 +991,15 @@ export async function drawPdfFile(coordToPrint) {
   if (!isFront && coordToPrint && coordToPrint.length > 0)
     await addCoordinatesToPdf(pdf, coordToPrint, pdfH, pdfW, imgH);
 
-  pdf.save(`${!coordToPrint ? "plansza" : "koordynaty"}.pdf`);
+  pdf.save(
+    `${
+      boardGameState.isBoard50x50
+        ? "mata50x50_plansza"
+        : !coordToPrint
+        ? "mata_kodowanie_na_dywanie_plansza"
+        : "mata_kodowanie_na_dywanie_koordynaty"
+    }.pdf`
+  );
 }
 
 export async function createDiscImage(img, color, size = 60) {

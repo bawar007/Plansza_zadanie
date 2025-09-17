@@ -47,4 +47,7 @@ export function registerUIEvents(handlers) {
     handlers.onDownloadBoardPdf();
   };
   document.getElementById("downloadCoords").onclick = handlers.onDownloadCoords;
+  document
+    .getElementById("switchBoard")
+    .addEventListener("click", handlers.onSwitchBoard);
 }
