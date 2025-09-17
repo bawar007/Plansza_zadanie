@@ -24,22 +24,6 @@ export const sections = [
     ],
   },
   {
-    name: "Kodowanie dla najmłodszych",
-    backgroundColors: false,
-    items: [
-      {
-        color: "#4466b0",
-        img: "./assets/symbole_do_kodowania/img1.png",
-        isCodingDisc: false,
-      },
-      {
-        color: "#4466b0",
-        img: "./assets/symbole_do_kodowania/img2.png",
-        isCodingDisc: false,
-      },
-    ],
-  },
-  {
     name: "Krążki obrazkowe sudoku",
     backgroundColors: [
       "#ee2223",

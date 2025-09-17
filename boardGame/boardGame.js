@@ -182,27 +182,18 @@ const boardMouseHandlers = {
 
     // Gumka: usuwanie elementów podczas przesuwania myszy
     if (boardGameState.isErasing) {
-      if (boardGameState.isFront && !boardGameState.isBoard50x50) {
-        // Na stronie front usuwaj dowolny element (krążek lub piksel)
-        const idx = boardGameState.piecesFront.findIndex(
-          (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5
-        );
-        if (idx !== -1) {
-          boardGameState.piecesFront.splice(idx, 1);
-          renderBoard();
-        }
-      } else {
-        // Na pozostałych stronach (back i 50x50) usuwaj piksele
-        const idxTable = boardGameState.isBoard50x50
-          ? boardGameState.pieces50x50
-          : boardGameState.piecesGrid;
-        const idx = idxTable.findIndex(
-          (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
-        );
-        if (idx !== -1) {
-          idxTable.splice(idx, 1);
-          renderBoard();
-        }
+      // Mousemove: gumka usuwa tylko piksele, niezależnie od trybu
+      let idxTable = boardGameState.isBoard50x50
+        ? boardGameState.pieces50x50
+        : boardGameState.isFront
+        ? boardGameState.piecesFront
+        : boardGameState.piecesGrid;
+      const idx = idxTable.findIndex(
+        (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
+      );
+      if (idx !== -1) {
+        idxTable.splice(idx, 1);
+        renderBoard();
       }
       return;
     }
@@ -490,28 +481,33 @@ const boardMouseHandlers = {
 
       if (boardGameState.dragging.isEraser) {
         if (boardGameState.isErasing) {
-          if (boardGameState.isBoard50x50) {
-            const idx = boardGameState.pieces50x50.findIndex(
-              (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
-            );
-            if (idx !== -1) {
-              boardGameState.pieces50x50.splice(idx, 1);
-            }
-          } else if (boardGameState.isFront) {
-            // Na froncie usuń dowolny element (krążek lub piksel)
-            const idx = boardGameState.piecesFront.findIndex(
-              (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5
-            );
-            if (idx !== -1) {
-              boardGameState.piecesFront.splice(idx, 1);
-            }
-          } else {
-            const idx = boardGameState.piecesGrid.findIndex(
-              (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
-            );
-            if (idx !== -1) {
-              boardGameState.piecesGrid.splice(idx, 1);
-            }
+          // Mouseup: najpierw usuń krążek, jeśli jest, potem piksel (dowolna mata)
+          let idxTable = boardGameState.isBoard50x50
+            ? boardGameState.pieces50x50
+            : boardGameState.isFront
+            ? boardGameState.piecesFront
+            : boardGameState.piecesGrid;
+          // Najpierw krążek (nie-piksel)
+          let idxDisc = idxTable.findIndex(
+            (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && !p.isPixel
+          );
+          if (idxDisc !== -1) {
+            idxTable.splice(idxDisc, 1);
+            boardGameState.isErasing = false;
+            showMessage("");
+            renderBoard();
+            return;
+          }
+          // Jeśli nie ma krążka, usuń piksel
+          let idxPixel = idxTable.findIndex(
+            (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
+          );
+          if (idxPixel !== -1) {
+            idxTable.splice(idxPixel, 1);
+            boardGameState.isErasing = false;
+            showMessage("");
+            renderBoard();
+            return;
           }
           boardGameState.isErasing = false;
           showMessage("");
@@ -612,8 +608,6 @@ const boardMouseHandlers = {
         renderBoard();
       }
       // Jeśli kliknięto w pustą przestrzeń
-      console.log(y >= boardHeight && y < codeStartY);
-
       if (y >= boardHeight && y < codeStartY) {
         return;
       }
