@@ -39,11 +39,10 @@ export function drawBoard(ctxOverlay, ctxBoard, options) {
       codeSectionY,
       0
     );
-    const circleX = 0 * boardGameState.cellSize + boardGameState.cellSize / 2;
+    const circleX = boardGameState.cellSize / 2;
     const circleY =
       boardRows * boardGameState.cellSize +
       boardGameState.codeMargin +
-      0 * boardGameState.cellSize +
       boardGameState.cellSize / 2;
     if (boardGameState.lockedImg) {
       drawCirclePiece(
@@ -112,8 +111,8 @@ export function drawPicker() {
   // a reszta zachowała oryginalną kolejność.
   const sectionsFinal = boardGameState.isBoard50x50
     ? [...sections].sort((a, b) => {
-        if (a.name === "Kodowanie dla najmłodszych") return -1;
-        if (b.name === "Kodowanie dla najmłodszych") return 1;
+        if (a.name === "Krążki kodowanie dla najmłodszych") return -1;
+        if (b.name === "Krążki kodowanie dla najmłodszych") return 1;
         return 0;
       })
     : sections;
@@ -162,11 +161,11 @@ export function drawPicker() {
       if (item.img) {
         const img = document.createElement("img");
         img.src = item.img;
-        img.style.width = "85%";
-        img.style.height = "85%";
+        img.style.width = color === "#ffffff" ? "100%" : "85%";
+        img.style.height = color === "#ffffff" ? "100%" : "85%";
         img.style.position = "absolute";
-        img.style.top = "7.5%";
-        img.style.left = "7.5%";
+        img.style.top = color === "#ffffff" ? "0" : "7.5%";
+        img.style.left = color === "#ffffff" ? "0" : "7.5%";
         img.style.borderRadius = borderRadius;
         imgBtn.appendChild(img);
       }
@@ -200,9 +199,9 @@ export function drawPicker() {
       colors.forEach((bgColor) =>
         forColoring.forEach((item) => createBtn(item, bgColor))
       );
-      noColoring.forEach((item) => createBtn(item, item.color || "#ccc"));
+      noColoring.forEach((item) => createBtn(item, item.color || "#fff"));
     } else {
-      section.items.forEach((item) => createBtn(item, item.color || "#ccc"));
+      section.items.forEach((item) => createBtn(item, item.color || "#fff"));
     }
   }
 
@@ -235,7 +234,9 @@ export function drawCirclePiece(ctx, x, y, size, color, img) {
   };
 
   if (isDrawableImage(img)) {
-    const imgSize = size * 0.8;
+    console.log(size);
+
+    const imgSize = color === "#ffffff" ? size * 0.9 : size * 0.8;
     ctx.save();
     ctx.beginPath();
     ctx.arc(x, y, imgSize / 2, 0, Math.PI * 2);
@@ -675,133 +676,190 @@ async function addCoordinatesToPdf(pdf, coordToPrint, pdfH, pdfW, imgH) {
   const textX2 = iconX2 + iconSize + 2;
   const rowHeight = iconSize + 1; // minimalna wysokość elementu
 
-  // --- LEWA KOLUMNA ---
-  let currentY1 = startY;
+  // Przygotuj dane dla obu kolumn
+  const leftColumnData = [];
+  const rightColumnData = [];
+
   for (let i = 0; i < coordToPrint.length; i += 2) {
-    const group1 = coordToPrint[i];
-    let textLines1 = group1
-      ? wrapText(pdf, group1.coords, colW - iconSize - 15)
-      : [];
-    let idx1 = 0;
-    let firstPage1 = true;
-    while (idx1 < textLines1.length) {
+    if (coordToPrint[i]) {
+      leftColumnData.push(coordToPrint[i]);
+    }
+    if (coordToPrint[i + 1]) {
+      rightColumnData.push(coordToPrint[i + 1]);
+    }
+  }
+
+  let currentPage = 1;
+  let currentY1 = startY;
+  let currentY2 = startY;
+  let leftIndex = 0;
+  let rightIndex = 0;
+  let leftItemIndex = 0; // indeks w obrębie aktualnego elementu lewej kolumny
+  let rightItemIndex = 0; // indeks w obrębie aktualnego elementu prawej kolumny
+
+  while (
+    leftIndex < leftColumnData.length ||
+    rightIndex < rightColumnData.length
+  ) {
+    // Ustaw aktualną stronę
+    if (currentPage > pdf.getNumberOfPages()) {
+      pdf.addPage();
+    }
+    if (pdf.setPage) pdf.setPage(currentPage);
+
+    // --- LEWA KOLUMNA ---
+    if (leftIndex < leftColumnData.length) {
+      const group1 = leftColumnData[leftIndex];
+      const textLines1 = wrapText(pdf, group1.coords, colW - iconSize - 15);
+
+      let firstPage1 = leftItemIndex === 0;
       let maxLines1 = firstPage1
         ? Math.floor(
             (maxListY - currentY1 - iconSize / 1.5) / (pdfTextSize * 0.5)
           )
         : Math.floor((maxListY - currentY1) / (pdfTextSize * 0.5));
-      if (maxLines1 < 1) {
-        pdf.addPage();
-        currentY1 = 30;
-        firstPage1 = false;
-        continue;
-      }
-      let linesLeft1 = textLines1.length - idx1;
-      let linesToDraw1 = Math.max(1, Math.min(linesLeft1, maxLines1));
-      if (firstPage1 && group1) {
-        const discImgData1 = await createDiscImage(
-          group1.img,
-          group1.color,
-          60
-        );
-        pdf.addImage(
-          discImgData1,
-          "PNG",
-          iconX1,
-          currentY1,
-          iconSize,
-          iconSize
-        );
-      }
-      pdf.setFontSize(pdfTextSize);
-      pdf.setTextColor("#4a6792");
-      for (let l = 0; l < linesToDraw1; l++) {
-        pdf.text(
-          textLines1[idx1 + l],
-          textX1,
-          currentY1 -
-            1 +
-            (firstPage1 ? iconSize / 1.5 : 0) +
-            l * pdfTextSize * 0.5
-        );
-      }
-      currentY1 +=
-        Math.max(
-          rowHeight,
-          (firstPage1 ? iconSize : 0) + (linesToDraw1 - 1) * pdfTextSize * 0.5
-        ) + 2;
-      idx1 += linesToDraw1;
-      firstPage1 = false;
-    }
-  }
 
-  // --- PRAWA KOLUMNA ---
-  if (pdf.setPage) pdf.setPage(1); // jsPDF >=2.0
-  let pageNum = 1;
-  let currentY2 = startY;
-  for (let i = 0; i < coordToPrint.length; i += 2) {
-    const group2 = coordToPrint[i + 1];
-    let textLines2 = group2
-      ? wrapText(pdf, group2.coords, colW - iconSize - 15)
-      : [];
-    let idx2 = 0;
-    let firstPage2 = true;
-    while (idx2 < textLines2.length) {
+      if (maxLines1 >= 1 && leftItemIndex < textLines1.length) {
+        let linesLeft1 = textLines1.length - leftItemIndex;
+        let linesToDraw1 = Math.max(1, Math.min(linesLeft1, maxLines1));
+
+        if (firstPage1) {
+          const discImgData1 = await createDiscImage(
+            group1.img,
+            group1.color,
+            60
+          );
+          pdf.addImage(
+            discImgData1,
+            "PNG",
+            iconX1,
+            currentY1,
+            iconSize,
+            iconSize
+          );
+        }
+
+        pdf.setFontSize(pdfTextSize);
+        pdf.setTextColor("#4a6792");
+        for (let l = 0; l < linesToDraw1; l++) {
+          pdf.text(
+            textLines1[leftItemIndex + l],
+            textX1,
+            currentY1 -
+              1 +
+              (firstPage1 ? iconSize / 1.5 : 0) +
+              l * pdfTextSize * 0.5
+          );
+        }
+
+        currentY1 +=
+          Math.max(
+            rowHeight,
+            (firstPage1 ? iconSize : 0) + (linesToDraw1 - 1) * pdfTextSize * 0.5
+          ) + 2;
+        leftItemIndex += linesToDraw1;
+
+        if (leftItemIndex >= textLines1.length) {
+          leftIndex++;
+          leftItemIndex = 0;
+        }
+      }
+    }
+
+    // --- PRAWA KOLUMNA ---
+    if (rightIndex < rightColumnData.length) {
+      const group2 = rightColumnData[rightIndex];
+      const textLines2 = wrapText(pdf, group2.coords, colW - iconSize - 15);
+
+      let firstPage2 = rightItemIndex === 0;
       let maxLines2 = firstPage2
         ? Math.floor(
             (maxListY - currentY2 - iconSize / 1.5) / (pdfTextSize * 0.5)
           )
         : Math.floor((maxListY - currentY2) / (pdfTextSize * 0.5));
-      if (maxLines2 < 1) {
-        // Sprawdź czy kolejna strona już istnieje
-        if (pageNum < pdf.getNumberOfPages()) {
-          pageNum++;
-          if (pdf.setPage) pdf.setPage(pageNum);
-        } else {
-          pdf.addPage();
-          pageNum++;
-          if (pdf.setPage) pdf.setPage(pageNum);
+
+      if (maxLines2 >= 1 && rightItemIndex < textLines2.length) {
+        let linesLeft2 = textLines2.length - rightItemIndex;
+        let linesToDraw2 = Math.max(1, Math.min(linesLeft2, maxLines2));
+
+        if (firstPage2) {
+          const discImgData2 = await createDiscImage(
+            group2.img,
+            group2.color,
+            60
+          );
+          pdf.addImage(
+            discImgData2,
+            "PNG",
+            iconX2,
+            currentY2,
+            iconSize,
+            iconSize
+          );
         }
-        currentY2 = 30;
-        firstPage2 = false;
-        continue;
+
+        pdf.setFontSize(pdfTextSize);
+        pdf.setTextColor("#4a6792");
+        for (let l = 0; l < linesToDraw2; l++) {
+          pdf.text(
+            textLines2[rightItemIndex + l],
+            textX2,
+            currentY2 -
+              1 +
+              (firstPage2 ? iconSize / 1.5 : 0) +
+              l * pdfTextSize * 0.5
+          );
+        }
+
+        currentY2 +=
+          Math.max(
+            rowHeight,
+            (firstPage2 ? iconSize : 0) + (linesToDraw2 - 1) * pdfTextSize * 0.5
+          ) + 2;
+        rightItemIndex += linesToDraw2;
+
+        if (rightItemIndex >= textLines2.length) {
+          rightIndex++;
+          rightItemIndex = 0;
+        }
       }
-      let linesLeft2 = textLines2.length - idx2;
-      let linesToDraw2 = Math.max(1, Math.min(linesLeft2, maxLines2));
-      if (firstPage2 && group2) {
-        const discImgData2 = await createDiscImage(
-          group2.img,
-          group2.color,
-          60
-        );
-        pdf.addImage(
-          discImgData2,
-          "PNG",
-          iconX2,
-          currentY2,
-          iconSize,
-          iconSize
-        );
+    }
+
+    // Sprawdź czy trzeba przejść na następną stronę
+    let needNewPage = false;
+
+    if (leftIndex < leftColumnData.length) {
+      const group1 = leftColumnData[leftIndex];
+      const textLines1 = wrapText(pdf, group1.coords, colW - iconSize - 15);
+      let firstPage1 = leftItemIndex === 0;
+      let maxLines1 = firstPage1
+        ? Math.floor(
+            (maxListY - currentY1 - iconSize / 1.5) / (pdfTextSize * 0.5)
+          )
+        : Math.floor((maxListY - currentY1) / (pdfTextSize * 0.5));
+      if (maxLines1 < 1 && leftItemIndex < textLines1.length) {
+        needNewPage = true;
       }
-      pdf.setFontSize(pdfTextSize);
-      pdf.setTextColor("#4a6792");
-      for (let l = 0; l < linesToDraw2; l++) {
-        pdf.text(
-          textLines2[idx2 + l],
-          textX2,
-          currentY2 -
-            1 +
-            (firstPage2 ? iconSize / 1.5 : 0) +
-            l * pdfTextSize * 0.5
-        );
+    }
+
+    if (rightIndex < rightColumnData.length) {
+      const group2 = rightColumnData[rightIndex];
+      const textLines2 = wrapText(pdf, group2.coords, colW - iconSize - 15);
+      let firstPage2 = rightItemIndex === 0;
+      let maxLines2 = firstPage2
+        ? Math.floor(
+            (maxListY - currentY2 - iconSize / 1.5) / (pdfTextSize * 0.5)
+          )
+        : Math.floor((maxListY - currentY2) / (pdfTextSize * 0.5));
+      if (maxLines2 < 1 && rightItemIndex < textLines2.length) {
+        needNewPage = true;
       }
-      currentY2 +=
-        Math.max(
-          rowHeight,
-          (firstPage2 ? iconSize : 0) + (linesToDraw2 - 1) * pdfTextSize * 0.5
-        ) + 2;
-      idx2 += linesToDraw2;
-      firstPage2 = false;
+    }
+
+    if (needNewPage) {
+      currentPage++;
+      currentY1 = 30;
+      currentY2 = 30;
     }
   }
 }
