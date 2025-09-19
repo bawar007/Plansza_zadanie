@@ -230,8 +230,6 @@ export function drawCirclePiece(ctx, x, y, size, color, img) {
   // Rysuj obraz tylko jeśli to prawidłowy typ zasobu graficznego
 
   if (isDrawableImage(img)) {
-    console.log(size);
-
     const imgSize = color === "#ffffff" ? size * 0.9 : size * 0.8;
     ctx.save();
     ctx.beginPath();

@@ -46,6 +46,10 @@ body {
   margin: 10px 0px;
   text-decoration: none;
 }
+.mainWrapper .banner .back-link:hover {
+  background: #f7a000;
+  cursor: pointer;
+}
 .mainWrapper #gameMain {
   display: flex;
   flex-direction: row;

@@ -221,6 +221,21 @@ export const sections = [
         img: "./assets/symbole_do_kodowania/img13.png",
         isCodingDisc: true,
       },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img14.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img15.png",
+        isCodingDisc: true,
+      },
+      {
+        color: "#4466b0",
+        img: "./assets/symbole_do_kodowania/img16.png",
+        isCodingDisc: true,
+      },
     ],
   },
   {
