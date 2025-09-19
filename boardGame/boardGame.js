@@ -6,6 +6,8 @@ import {
   getCoordsList,
   addPixelAt,
   getTouchPos,
+  getCurrentPiecesTable,
+  createPieceObj,
 } from "./boardGameHelpers.js";
 import { boardGameState } from "./boardGameState.js";
 import {
@@ -24,39 +26,6 @@ import {
   drawPdfFile,
   drawLabels,
 } from "./boardGameDraw.js";
-
-const gameMain = document.getElementById("gameMain");
-gameMain.innerHTML = `
-<div class="pickerPanel">
-  <div id="picker"></div>
-  <div id="message"></div>
-
-  <div class="buttonsContainer">
-    <select id="gridSizeSelector" style="margin: 10px; font-size: 16px; display: none">
-      <option value="10">10 x 10</option>
-      <option value="12">12 x 12</option>
-      <option value="14">14 x 14</option>
-      <option value="16">16 x 16</option>
-      <option value="18">18 x 18</option>
-      <option value="20">20 x 20</option>
-    </select>
-    <button id="switchBoard">Mata 50x50</button>
-    <button id="flipBoard">Obróć matę</button>
-    <button id="clearBoard">Wyczyść stronę</button>
-    <button id="downloadBoardPdf">Pobierz jako PDF</button>
-    <button id="downloadCoords" style="display: none">Pobierz koordynaty</button>
-  </div>
-</div>
-<div id="boardWrapper">
-    <div id="yAxis"></div>
-    <div>
-      <div id="xAxis"></div>
-      <canvas id="board" width="800" height="800"></canvas>
-      <canvas id="boardOverlay" width="800" height="800"></canvas>
-    </div>
-  </div>
-</div>
-`;
 
 const board = document.getElementById("board");
 const ctxBoard = board.getContext("2d");
@@ -117,6 +86,19 @@ function updateCanvasSize() {
   drawLabels(boardHeight, boardWidth);
 }
 
+function updateClearBoardButton() {
+  const btn = document.getElementById("clearBoard");
+  let hasElements = false;
+  if (boardGameState.isBoard50x50) {
+    hasElements = boardGameState.pieces50x50.length > 0;
+  } else if (boardGameState.isFront) {
+    hasElements = boardGameState.piecesFront.length > 0;
+  } else {
+    hasElements = boardGameState.piecesGrid.length > 0;
+  }
+  btn.style.display = hasElements ? "inline-block" : "none";
+}
+
 function renderBoard() {
   if (boardGameState.isBoard50x50) {
     drawBoard(ctxOverlay, ctxBoard, {
@@ -160,34 +142,27 @@ function renderBoard() {
       boardWrapper.style.alignItems = "flex-start";
     }
   }
+  updateClearBoardButton();
 }
 
 // Obsługa dotyku dla mobilnych
 let isDraggingBoard = false;
 let dragStartX = 0;
 let scrollStartX = 0;
-let isTouchDraggingBoard = false;
-let touchStartX = 0;
-let touchStartY = 0;
-let touchScrollStartX = 0;
-let touchScrollStartY = 0;
+
 let isTouchErasing = false;
 let touchDraggingPiece = null;
 let touchTimer = null;
 
 const boardMouseHandlers = {
   onMouseMove: (e) => {
-    const cellSizeDefalut = boardGameState.cellSize;
-    const { mx, my, c, r, x, y } = getMousePos(e, board, cellSizeDefalut);
+    const cellSizeDefault = boardGameState.cellSize;
+    const { mx, my, c, r, x, y } = getMousePos(e, board, cellSizeDefault);
 
     // Gumka: usuwanie elementów podczas przesuwania myszy
     if (boardGameState.isErasing) {
       // Mousemove: gumka usuwa tylko piksele, niezależnie od trybu
-      let idxTable = boardGameState.isBoard50x50
-        ? boardGameState.pieces50x50
-        : boardGameState.isFront
-        ? boardGameState.piecesFront
-        : boardGameState.piecesGrid;
+      let idxTable = getCurrentPiecesTable(boardGameState);
       const idx = idxTable.findIndex(
         (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && p.isPixel
       );
@@ -248,7 +223,7 @@ const boardMouseHandlers = {
             ctxOverlay,
             mx,
             my,
-            cellSizeDefalut,
+            cellSizeDefault,
             "#eee",
             dragging.img
           )
@@ -256,7 +231,7 @@ const boardMouseHandlers = {
             ctxOverlay,
             mx,
             my,
-            cellSizeDefalut,
+            cellSizeDefault,
             "#eee",
             dragging.img
           );
@@ -287,13 +262,13 @@ const boardMouseHandlers = {
           ? boardGameState.codeMargin
           : boardGameState.codeMargin);
 
-      const col = Math.floor(x / cellSizeDefalut);
-      const row = Math.floor((y - codeStartY) / cellSizeDefalut);
+      const col = Math.floor(x / cellSizeDefault);
+      const row = Math.floor((y - codeStartY) / cellSizeDefault);
 
       const isLockedCell =
         (!boardGameState.isFront || boardGameState.isBoard50x50) &&
         y >= codeStartY &&
-        y < codeStartY + boardGameState.codeRows * cellSizeDefalut &&
+        y < codeStartY + boardGameState.codeRows * cellSizeDefault &&
         col === 0 &&
         row === 0;
 
@@ -342,7 +317,7 @@ const boardMouseHandlers = {
           ctxOverlay,
           mx,
           my,
-          cellSizeDefalut,
+          cellSizeDefault,
           boardGameState.dragging.color,
           img
         );
@@ -355,7 +330,7 @@ const boardMouseHandlers = {
           ctxOverlay,
           mx,
           my,
-          cellSizeDefalut,
+          cellSizeDefault,
           boardGameState.dragging.color,
           img
         );
@@ -369,12 +344,12 @@ const boardMouseHandlers = {
           ctxOverlay,
           mx,
           my,
-          cellSizeDefalut,
+          cellSizeDefault,
           dragging.color,
           null
         );
       } else {
-        drawEmptyDisc(ctxOverlay, cellSizeDefalut, dragging);
+        drawEmptyDisc(ctxOverlay, cellSizeDefault, dragging);
       }
     }
 
@@ -482,11 +457,7 @@ const boardMouseHandlers = {
       if (boardGameState.dragging.isEraser) {
         if (boardGameState.isErasing) {
           // Mouseup: najpierw usuń krążek, jeśli jest, potem piksel (dowolna mata)
-          let idxTable = boardGameState.isBoard50x50
-            ? boardGameState.pieces50x50
-            : boardGameState.isFront
-            ? boardGameState.piecesFront
-            : boardGameState.piecesGrid;
+          let idxTable = getCurrentPiecesTable(boardGameState);
           // Najpierw krążek (nie-piksel)
           let idxDisc = idxTable.findIndex(
             (p) => Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5 && !p.isPixel
@@ -576,14 +547,7 @@ const boardMouseHandlers = {
           return;
         }
 
-        const pieceObj = {
-          x,
-          y,
-          color: boardGameState.dragging.color,
-          img: boardGameState.dragging.img,
-          isCodingDisc: isCodingDisc,
-          isPixel: !!boardGameState.dragging.isPixel,
-        };
+        const pieceObj = createPieceObj(x, y, boardGameState, isCodingDisc);
 
         if (boardGameState.isBoard50x50) {
           boardGameState.pieces50x50.push(pieceObj);
@@ -631,14 +595,8 @@ const boardMouseHandlers = {
           return;
         }
 
-        const pieceObj = {
-          x,
-          y,
-          color: boardGameState.dragging.color,
-          img: boardGameState.dragging.img,
-          isCodingDisc: isCodingDisc,
-          isPixel: !!boardGameState.dragging.isPixel,
-        };
+        const pieceObj = createPieceObj(x, y, boardGameState, isCodingDisc);
+
         if (boardGameState.isBoard50x50) {
           boardGameState.pieces50x50.push(pieceObj);
           if (!boardGameState.dragging.isPixel) {
@@ -686,9 +644,9 @@ const boardMouseHandlers = {
     }
 
     ctxOverlay.clearRect(0, 0, boardOverlay.width, boardOverlay.height);
-    const cellSizeDefalut = boardGameState.cellSize;
+    const cellSizeDefault = boardGameState.cellSize;
 
-    const { mx, my, x, y } = getMousePos(e, board, cellSizeDefalut);
+    const { mx, my, x, y } = getMousePos(e, board, cellSizeDefault);
 
     // Sprawdź czy mamy wybrany piksel do malowania
     if (
@@ -820,12 +778,14 @@ const boardMouseHandlers = {
 
 const uiHandlers = {
   onClearBoard: () => {
-    boardGameState.isBoard50x50
-      ? (boardGameState.pieces50x50.length = 0)
-      : boardGameState.isFront
-      ? (boardGameState.piecesFront.length = 0)
-      : (boardGameState.piecesGrid.length = 0);
-    renderBoard();
+    if (confirm("Czy na pewno chcesz wyczyścić planszę?")) {
+      boardGameState.isBoard50x50
+        ? (boardGameState.pieces50x50.length = 0)
+        : boardGameState.isFront
+        ? (boardGameState.piecesFront.length = 0)
+        : (boardGameState.piecesGrid.length = 0);
+      renderBoard();
+    }
   },
   onFlipBoard: () => {
     boardGameState.isFront = !boardGameState.isFront;
@@ -1093,29 +1053,6 @@ const boardWrapperHandlers = {
     isDraggingBoard = true;
     dragStartX = e.clientX;
     scrollStartX = boardWrapper.scrollLeft;
-  },
-  onTouchStart: (e) => {
-    if (e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    isTouchDraggingBoard = true;
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-    touchScrollStartX = boardWrapper.scrollLeft;
-    touchScrollStartY = boardWrapper.scrollTop;
-    boardWrapper.style.cursor = "grab";
-  },
-  onTouchMove: (e) => {
-    if (!isTouchDraggingBoard || e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    const dx = touchStartX - touch.clientX;
-    const dy = touchStartY - touch.clientY;
-    boardWrapper.scrollLeft = touchScrollStartX + dx;
-    boardWrapper.scrollTop = touchScrollStartY + dy;
-    e.preventDefault();
-  },
-  onTouchEnd: (e) => {
-    isTouchDraggingBoard = false;
-    boardWrapper.style.cursor = "default";
   },
 };
 

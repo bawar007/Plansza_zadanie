@@ -1,59 +1,72 @@
-#gameMain {
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+.mainWrapper .banner {
+  padding: 10px;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+.mainWrapper .banner img {
+  height: 90px;
+}
+.mainWrapper .banner h1 {
+  padding: 2rem;
+  font-size: 40px;
+  color: #fff;
+  color: #00a19a;
+}
+.mainWrapper .banner .back-link {
+  display: inline-block;
+  text-transform: uppercase;
+  background: #02bbb2;
+  color: #ffffff;
+  padding: 10px 30px;
+  font-size: 16px;
+  border-radius: 28px;
+  -webkit-transition: all 0.5s;
+  -o-transition: all 0.5s;
+  transition: all 0.5s;
+  border: 0;
+  line-height: 1.6;
+  margin: 10px 0px;
+  text-decoration: none;
+}
+.mainWrapper #gameMain {
   display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: flex-start;
-  width: 100%;
+  width: 95%;
   margin-top: 50px;
+  position: relative;
 }
-
-#yAxis {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  margin-right: 2px;
-  position: absolute;
-  left: 10px;
-  top: 40px;
-}
-
-/* Specjalne style dla osi maty 50x50 */
-#yAxis.board50x50 {
-  left: 30px;
-  top: 140px;
-  width: 100px;
-  height: 500px;
-}
-
-#xAxis {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 2px;
-  position: absolute;
-  top: 10px;
-  left: 40px;
-}
-
-#xAxis.board50x50 {
-  top: 30px;
-  left: 140px;
-  width: 500px;
-  height: 100px;
-}
-
-.pickerPanel {
+.mainWrapper #gameMain .pickerPanel {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 20vw;
+  width: 20%;
   position: sticky;
   top: 0px;
-  padding-top: 10px;
+  padding-top: 40px;
   z-index: 4;
   background-color: white;
 }
-
-#picker {
+.mainWrapper #gameMain .pickerPanel #picker {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -63,68 +76,54 @@
   padding: 10px;
   height: 400px;
 }
-
-.pickerItemsWrapper {
+.mainWrapper #gameMain .pickerPanel #picker .sectionSelector {
+  margin: 10px;
+  font-size: 16px;
+  padding: 5px;
+}
+.mainWrapper #gameMain .pickerPanel #picker .pickerItemsWrapper {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   justify-content: center;
   align-items: flex-start;
-
   margin-top: 10px;
   width: 100%;
   height: 80%;
   overflow-y: auto;
 }
-
-.sectionSelector {
-  margin: 10px;
-  font-size: 16px;
-  padding: 5px;
+.mainWrapper #gameMain .pickerPanel #picker .pickerItemsWrapper .imgButton {
+  width: 50px;
+  height: 50px;
+  margin: 5px;
+  border: 2px solid rgb(51, 51, 51);
+  padding: 0px;
+  position: relative;
+  background: rgb(255, 255, 255);
 }
-
-#message {
+.mainWrapper #gameMain .pickerPanel #picker .pickerItemsWrapper .imgButton img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.mainWrapper #gameMain .pickerPanel #message {
   color: red;
   height: 24px;
   margin: 10px;
 }
-
-#boardWrapper {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  flex-direction: column;
-  position: relative;
-  overflow: auto;
-  padding: 40px;
-}
-
-#boardWrapper.board50x50 {
-  padding: 140px 40px 40px 140px;
-}
-
-#boardOverlay {
-  position: absolute;
-  left: 40px;
-  top: 40px;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.buttonsContainer {
+.mainWrapper #gameMain .pickerPanel .buttonsContainer {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-evenly;
   width: 100%;
+  margin: 10px 0;
 }
-
-#clearBoard,
-#flipBoard,
-#downloadBoardPdf,
-#downloadCoords,
-#switchBoard {
+.mainWrapper #gameMain .pickerPanel .buttonsContainer #gridSizeSelector {
+  width: 80%;
+}
+.mainWrapper #gameMain .pickerPanel .buttonsContainer .boardGameBtn {
   display: inline-block;
   text-transform: uppercase;
   background: #00a19a;
@@ -140,15 +139,155 @@
   margin: 10px 0px;
   width: 80%;
 }
-#clearBoard:hover,
-#flipBoard:hover,
-#downloadBoardPdf:hover,
-#downloadCoords:hover,
-#switchBoard:hover {
+.mainWrapper #gameMain .pickerPanel .buttonsContainer .boardGameBtn:hover {
   background: #f7a000;
   cursor: pointer;
 }
+.mainWrapper #gameMain #mainBoardContainer {
+  display: flex;
+  max-width: 80%;
+}
+.mainWrapper #gameMain #mainBoardContainer #logoWrapper {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 40px;
+}
+.mainWrapper #gameMain #mainBoardContainer #logoWrapper img {
+  height: 80px;
+}
+.mainWrapper #gameMain #mainBoardContainer #logoWrapper a {
+  color: red;
+  text-decoration: none;
+}
+.mainWrapper #gameMain #mainBoardContainer #boardWrapper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-direction: column;
+  position: relative;
+  overflow-x: auto;
+  padding: 40px;
+  margin: 0 auto;
+}
+.mainWrapper #gameMain #mainBoardContainer #boardWrapper.board50x50 {
+  padding: 140px 40px 40px 140px;
+}
+.mainWrapper #gameMain #mainBoardContainer #boardWrapper #yAxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  margin-right: 2px;
+  position: absolute;
+  left: 10px;
+  top: 40px;
+}
+.mainWrapper #gameMain #mainBoardContainer #boardWrapper #yAxis.board50x50 {
+  left: 30px;
+  top: 140px;
+  width: 100px;
+  height: 500px;
+}
+.mainWrapper #gameMain #mainBoardContainer #boardWrapper #boardAndXAxisWrapper #xAxis {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2px;
+  position: absolute;
+  top: 10px;
+  left: 40px;
+}
+.mainWrapper #gameMain #mainBoardContainer #boardWrapper #boardAndXAxisWrapper #xAxis.board50x50 {
+  top: 30px;
+  left: 40px;
+  width: 500px;
+  height: 100px;
+}
+.mainWrapper #gameMain #mainBoardContainer #boardWrapper #boardAndXAxisWrapper #boardOverlay {
+  position: absolute;
+  left: 40px;
+  top: 40px;
+  z-index: 2;
+  pointer-events: none;
+}
 
+@media (max-width: 1024px) {
+  .mainWrapper #gameMain {
+    flex-direction: column;
+    align-items: center;
+  }
+  .mainWrapper #gameMain .pickerPanel {
+    width: 95%;
+    background-color: white;
+    height: auto;
+    position: static;
+  }
+  .mainWrapper #gameMain .pickerPanel #picker {
+    height: 250px;
+  }
+  .mainWrapper #gameMain .pickerPanel .buttonsContainer .boardGameBtn {
+    width: 30% !important;
+    margin: 5px;
+  }
+  .mainWrapper #gameMain #mainBoardContainer {
+    max-width: 95%;
+  }
+  .mainWrapper #gameMain #mainBoardContainer #boardWrapper {
+    max-width: 100%;
+    margin: 40px 0;
+  }
+  button {
+    font-size: 20px !important;
+  }
+}
+@media (max-width: 600px) {
+  .mainWrapper #gameMain {
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 10px;
+  }
+  .mainWrapper #gameMain .pickerPanel {
+    width: 90%;
+    min-width: 0;
+    padding: 5px 0 0 0;
+    background-color: white;
+    height: auto;
+    box-shadow: none;
+  }
+  .mainWrapper #gameMain .pickerPanel #picker {
+    width: 100vw;
+    min-width: 0;
+    padding: 5px;
+    height: 180px;
+    border-width: 1px;
+  }
+  .mainWrapper #gameMain .pickerPanel #picker .pickerItemsWrapper {
+    height: 60%;
+    margin-top: 5px;
+  }
+  .mainWrapper #gameMain .pickerPanel .buttonsContainer {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100vw;
+  }
+  .mainWrapper #gameMain .pickerPanel .buttonsContainer .boardGameBtn {
+    width: 95vw !important;
+    margin: 5px 0;
+    font-size: 18px !important;
+  }
+  .mainWrapper #gameMain #mainBoardContainer #boardWrapper {
+    width: 100vw;
+    padding: 10px 0 0 0;
+    max-height: 50vh;
+    margin: 10px 0;
+  }
+  .imgButton {
+    width: 36px;
+    height: 36px;
+    margin: 3px;
+  }
+}
 #gridSizeSelector,
 .sectionSelector {
   display: block;
@@ -163,48 +302,5 @@
   border-radius: 0.25rem;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
-#gridSizeSelector {
-  width: 80%;
-}
 
-.imgButton {
-  width: 50px;
-  height: 50px;
-  margin: 5px;
-  border: 2px solid rgb(51, 51, 51);
-  padding: 0px;
-  position: relative;
-  background: rgb(255, 255, 255);
-}
-.imgButton img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-@media (max-width: 1024px) {
-  #gameMain {
-    flex-direction: column;
-    align-items: center;
-  }
-  #boardWrapper {
-    width: 100%;
-    max-height: 60vh;
-    margin: 40px 0;
-  }
-  .pickerPanel {
-    width: 100%;
-    background-color: white;
-    height: auto;
-  }
-  button {
-    font-size: 20px !important;
-  }
-  #picker {
-    height: 250px;
-  }
-  .buttonsContainer > button {
-    width: 30% !important;
-    margin: 5px;
-  }
-}
+/*# sourceMappingURL=boardStyle.css.map */

@@ -21,15 +21,6 @@ export function registerBoardTouchEvents(board, handlers) {
 
 export function registerBoardWrapperEvents(boardWrapper, handlers) {
   boardWrapper.addEventListener("mousedown", handlers.onMouseDown);
-  boardWrapper.addEventListener("touchmove", handlers.onTouchMove, {
-    passive: false,
-  });
-  boardWrapper.addEventListener("touchend", handlers.onTouchEnd, {
-    passive: false,
-  });
-  boardWrapper.addEventListener("touchstart", handlers.onTouchStart, {
-    passive: false,
-  });
 }
 
 export function registerUIEvents(handlers) {

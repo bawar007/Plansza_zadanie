@@ -1,6 +1,10 @@
 import { boardGameState } from "./boardGameState.js";
 import { blockColors, sections } from "./boardGameData.js";
-import { loadImageAsync, wrapText } from "./boardGameHelpers.js";
+import {
+  isDrawableImage,
+  loadImageAsync,
+  wrapText,
+} from "./boardGameHelpers.js";
 
 export function drawCell(ctxBoard, x, y, size, color, arc) {
   ctxBoard.beginPath();
@@ -175,26 +179,26 @@ export function drawPicker() {
     };
 
     // Dodaj gumkę tylko w sekcji Kolorowe piksele i tylko na drugiej stronie maty
-    if (section.name === "Kolorowe piksele") {
-      const eraserBtn = document.createElement("button");
-      eraserBtn.className = "imgButton";
-      eraserBtn.title = "Gumka";
-      eraserBtn.style.width = "75px";
-      eraserBtn.style.height = "75px";
-      eraserBtn.style.borderRadius =
-        boardGameState.isFront && !boardGameState.isBoard50x50 ? "50%" : "0";
-      eraserBtn.style.border = "2px solid #333";
-      eraserBtn.style.position = "relative";
-      eraserBtn.style.margin = "5px";
-      eraserBtn.style.background = "#eee";
-      eraserBtn.innerHTML = "<span style='font-size:32px;'>🧽</span>";
-      eraserBtn.onclick = () => {
-        boardGameState.dragging = { isEraser: true, img: "/assets/eraser.png" };
-        boardGameState.isPainting = false;
-        boardGameState.paintColor = null;
-      };
-      imagesDiv.appendChild(eraserBtn);
-    }
+
+    const eraserBtn = document.createElement("button");
+    eraserBtn.className = "imgButton";
+    eraserBtn.title = "Gumka";
+    eraserBtn.style.width = "75px";
+    eraserBtn.style.height = "75px";
+    eraserBtn.style.borderRadius =
+      boardGameState.isFront && !boardGameState.isBoard50x50 ? "50%" : "0";
+    eraserBtn.style.border = "2px solid #333";
+    eraserBtn.style.position = "relative";
+    eraserBtn.style.margin = "5px";
+    eraserBtn.style.background = "#eee";
+    eraserBtn.innerHTML = "<span style='font-size:32px;'>🧽</span>";
+    eraserBtn.onclick = () => {
+      boardGameState.dragging = { isEraser: true, img: "/assets/eraser.png" };
+      boardGameState.isPainting = false;
+      boardGameState.paintColor = null;
+    };
+    imagesDiv.appendChild(eraserBtn);
+
     if (colors) {
       colors.forEach((bgColor) =>
         forColoring.forEach((item) => createBtn(item, bgColor))
@@ -224,14 +228,6 @@ export function drawCirclePiece(ctx, x, y, size, color, img) {
   ctx.restore();
 
   // Rysuj obraz tylko jeśli to prawidłowy typ zasobu graficznego
-  const isDrawableImage = (val) => {
-    return (
-      val instanceof HTMLImageElement ||
-      val instanceof HTMLCanvasElement ||
-      (typeof ImageBitmap !== "undefined" && val instanceof ImageBitmap) ||
-      (typeof OffscreenCanvas !== "undefined" && val instanceof OffscreenCanvas)
-    );
-  };
 
   if (isDrawableImage(img)) {
     console.log(size);
@@ -260,15 +256,6 @@ export function drawSquarePiece(ctx, x, y, size, color, img) {
   ctx.stroke();
   ctx.restore();
 
-  const isDrawableImage = (val) => {
-    return (
-      val instanceof HTMLImageElement ||
-      val instanceof HTMLCanvasElement ||
-      (typeof ImageBitmap !== "undefined" && val instanceof ImageBitmap) ||
-      (typeof OffscreenCanvas !== "undefined" && val instanceof OffscreenCanvas)
-    );
-  };
-
   if (isDrawableImage(img)) {
     ctx.save();
     ctx.beginPath();
@@ -294,17 +281,23 @@ export function drawLabels(height, width) {
     yAxis.style.height = height + "px";
     yAxis.style.width = "100px";
     xAxis.style.height = "100px";
-    xAxis.style.width = width + "px";
+    xAxis.style.width = width + 100 + "px";
+
+    const createDivWrapper = () => {
+      const imgWrapper = document.createElement("div");
+      imgWrapper.style.height = "100px";
+      imgWrapper.style.width = "100px";
+      imgWrapper.style.display = "flex";
+      imgWrapper.style.alignItems = "center";
+      return imgWrapper;
+    };
 
     // Oś Y - obrazki img1.png do img5.png (pionowo)
     for (let i = 1; i <= 9; i++) {
       if (i <= 5) {
-        const imgWrapper = document.createElement("div");
-        imgWrapper.style.height = "100px";
-        imgWrapper.style.width = "100px";
-        imgWrapper.style.display = "flex";
-        imgWrapper.style.alignItems = "center";
+        const imgWrapper = createDivWrapper();
         imgWrapper.style.justifyContent = "flex-end";
+
         const imgElement = document.createElement("img");
         imgElement.src = `assets/mata50x50/osY/osY_img${i}.png`;
         imgElement.style.width = "60px";
@@ -313,11 +306,7 @@ export function drawLabels(height, width) {
         imgWrapper.appendChild(imgElement);
         yAxis.appendChild(imgWrapper);
       } else {
-        const imgWrapper = document.createElement("div");
-        imgWrapper.style.height = "100px";
-        imgWrapper.style.width = "100px";
-        imgWrapper.style.display = "flex";
-        imgWrapper.style.alignItems = "center";
+        const imgWrapper = createDivWrapper();
         imgWrapper.style.justifyContent = "flex-end";
         imgWrapper.style.fontWeight = "bold";
         imgWrapper.style.fontSize = "16px";
@@ -327,17 +316,18 @@ export function drawLabels(height, width) {
     }
 
     // Oś X - obrazki img6.png do img10.png (poziomo)
-    for (let i = 1; i <= 5; i++) {
-      const imgWrapper = document.createElement("div");
-      imgWrapper.style.height = "100px";
-      imgWrapper.style.width = "100px";
-      imgWrapper.style.display = "flex";
-      imgWrapper.style.alignItems = "flex-end";
+    for (let i = 1; i <= 6; i++) {
+      const imgWrapper = createDivWrapper();
       imgWrapper.style.justifyContent = "center";
+
       const imgElement = document.createElement("img");
-      imgElement.src = `assets/mata50x50/osX/osX_img${i}.png`;
-      imgElement.style.width = "90px";
-      imgElement.style.height = "90px";
+
+      imgElement.src =
+        i === 1
+          ? "assets/images/logo.png"
+          : `assets/mata50x50/osX/osX_img${i - 1}.png`;
+      imgElement.style.width = i === 1 ? "90px" : "90px";
+      imgElement.style.height = i === 1 ? null : "90px";
       imgElement.style.display = "inline-block";
       imgWrapper.appendChild(imgElement);
       xAxis.appendChild(imgWrapper);

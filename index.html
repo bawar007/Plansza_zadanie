@@ -1,28 +1,75 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <title></title>
-    <style>
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-      }
-      * {
-        margin: 0;
-        padding: 0;
-      }
-      body {
-        font-family: Arial, sans-serif;
-        text-align: center;
-        margin: 20px;
-      }
-    </style>
+    <title>Mata ONLINE</title>
     <link rel="stylesheet" href="./boardGame/boardStyle.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   </head>
   <body>
-    <div id="gameMain"></div>
+    <div
+      class="mainWrapper"
+      style="
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+      "
+    >
+      <div class="banner">
+        <div style="width: 25%">
+          <img src="/assets/images/logo.png" alt="Logo" />
+        </div>
+        <div style="width: 50%"><h1>MATA ONLINE</h1></div>
+        <div style="width: 25%">
+          <a href="https://kodowanienadywanie.pl" class="back-link"
+            >Powrót do strony</a
+          >
+        </div>
+      </div>
+      <div id="gameMain">
+        <div class="pickerPanel">
+          <div id="picker"></div>
+          <div id="message"></div>
+
+          <div class="buttonsContainer">
+            <select
+              id="gridSizeSelector"
+              style="margin: 10px; font-size: 16px; display: none"
+            >
+              <option value="10">10 x 10</option>
+              <option value="12">12 x 12</option>
+              <option value="14">14 x 14</option>
+              <option value="16">16 x 16</option>
+              <option value="18">18 x 18</option>
+              <option value="20">20 x 20</option>
+            </select>
+            <button id="switchBoard" class="boardGameBtn">Mata 50x50</button>
+            <button id="flipBoard" class="boardGameBtn">Obróć matę</button>
+            <button id="clearBoard" class="boardGameBtn">Wyczyść stronę</button>
+            <button id="downloadBoardPdf" class="boardGameBtn">
+              Pobierz jako PDF
+            </button>
+            <button
+              id="downloadCoords"
+              class="boardGameBtn"
+              style="display: none"
+            >
+              Pobierz koordynaty
+            </button>
+          </div>
+        </div>
+        <div id="mainBoardContainer">
+          <div id="boardWrapper">
+            <div id="yAxis"></div>
+            <div id="boardAndXAxisWrapper">
+              <div id="xAxis"></div>
+              <canvas id="board" width="800" height="800"></canvas>
+              <canvas id="boardOverlay" width="800" height="800"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="./boardGame/boardGame.js"></script>
   </body>
 </html>

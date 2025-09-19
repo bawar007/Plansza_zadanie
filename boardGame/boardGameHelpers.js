@@ -48,14 +48,14 @@ export function showMessage(txt) {
   msg.textContent = txt;
 }
 
-export function getMousePos(e, board, cellSizeDefalut) {
+export function getMousePos(e, board, cellSizeDefault) {
   const rect = board.getBoundingClientRect();
   const mx = e.clientX - rect.left;
   const my = e.clientY - rect.top;
-  const c = Math.floor(mx / cellSizeDefalut);
-  const r = Math.floor(my / cellSizeDefalut);
-  const x = c * cellSizeDefalut + cellSizeDefalut / 2;
-  const y = r * cellSizeDefalut + cellSizeDefalut / 2;
+  const c = Math.floor(mx / cellSizeDefault);
+  const r = Math.floor(my / cellSizeDefault);
+  const x = c * cellSizeDefault + cellSizeDefault / 2;
+  const y = r * cellSizeDefault + cellSizeDefault / 2;
   return { mx, my, c, r, x, y };
 }
 
@@ -193,3 +193,31 @@ export function addPixelAt(
   }
   return true;
 }
+
+export function getCurrentPiecesTable(boardGameState) {
+  return boardGameState.isBoard50x50
+    ? boardGameState.pieces50x50
+    : boardGameState.isFront
+    ? boardGameState.piecesFront
+    : boardGameState.piecesGrid;
+}
+
+export function createPieceObj(x, y, boardGameState, isCodingDisc) {
+  return {
+    x,
+    y,
+    color: boardGameState.dragging.color,
+    img: boardGameState.dragging.img,
+    isCodingDisc: isCodingDisc,
+    isPixel: !!boardGameState.dragging.isPixel,
+  };
+}
+
+export const isDrawableImage = (val) => {
+  return (
+    val instanceof HTMLImageElement ||
+    val instanceof HTMLCanvasElement ||
+    (typeof ImageBitmap !== "undefined" && val instanceof ImageBitmap) ||
+    (typeof OffscreenCanvas !== "undefined" && val instanceof OffscreenCanvas)
+  );
+};
