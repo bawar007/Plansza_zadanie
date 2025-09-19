@@ -59,7 +59,7 @@ export function drawBoard(ctxOverlay, ctxBoard, options) {
       );
     } else {
       const newLockedImg = new window.Image();
-      newLockedImg.src = "../assets/symbole_do_kodowania/img4.png";
+      newLockedImg.src = "../assets/symbole_do_kodowania/img7.png";
       newLockedImg.onload = function () {
         boardGameState.lockedImg = newLockedImg;
 
