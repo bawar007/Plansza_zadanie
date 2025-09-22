@@ -6,32 +6,6 @@ import {
   wrapText,
 } from "./boardGameHelpers.js";
 
-// Cache na przeskalowane obrazy (per obiekt Image i docelowy rozmiar CSS)
-const __resizedImageCache = new WeakMap();
-
-function getResizedForDpr(img, cssSize) {
-  const dpr = window.devicePixelRatio || 1;
-  const targetPx = Math.max(1, Math.round(cssSize * dpr));
-  if (!img) return null;
-  let cacheForImg = __resizedImageCache.get(img);
-  if (!cacheForImg) {
-    cacheForImg = new Map();
-    __resizedImageCache.set(img, cacheForImg);
-  }
-  let buf = cacheForImg.get(targetPx);
-  if (buf) return buf;
-  const canvas = document.createElement("canvas");
-  canvas.width = targetPx;
-  canvas.height = targetPx;
-  const cctx = canvas.getContext("2d");
-  cctx.imageSmoothingEnabled = true;
-  cctx.imageSmoothingQuality = "high";
-  cctx.clearRect(0, 0, canvas.width, canvas.height);
-  cctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  cacheForImg.set(targetPx, canvas);
-  return canvas;
-}
-
 export function drawCell(ctxBoard, x, y, size, color, arc) {
   ctxBoard.beginPath();
   arc
@@ -49,10 +23,10 @@ export function drawBoard(ctxOverlay, ctxBoard, options) {
   const codeSectionY =
     boardHeight - boardGameState.codeRows * boardGameState.cellSize;
 
-  // ctxBoard.canvas.width = boardWidth;
-  // ctxBoard.canvas.height = boardHeight;
-  // ctxOverlay.canvas.height = boardHeight;
-  // ctxOverlay.canvas.width = boardWidth;
+  ctxBoard.canvas.width = boardWidth;
+  ctxBoard.canvas.height = boardHeight;
+  ctxOverlay.canvas.height = boardHeight;
+  ctxOverlay.canvas.width = boardWidth;
   ctxBoard.clearRect(0, 0, ctxBoard.canvas.width, ctxBoard.canvas.height);
   ctxOverlay.clearRect(0, 0, ctxOverlay.canvas.width, ctxOverlay.canvas.height);
 
@@ -254,20 +228,19 @@ export function drawCirclePiece(ctx, x, y, size, color, img) {
   ctx.restore();
 
   // Rysuj obraz tylko jeśli to prawidłowy typ zasobu graficznego
+
   if (isDrawableImage(img)) {
     const imgSize = color === "#ffffff" ? size * 0.9 : size * 0.8;
-    const buf = getResizedForDpr(img, imgSize);
     ctx.save();
     ctx.beginPath();
     ctx.arc(x, y, imgSize / 2, 0, Math.PI * 2);
     ctx.clip();
-
     ctx.drawImage(
-      buf || img,
-      Math.round(x - imgSize / 2),
-      Math.round(y - imgSize / 2),
-      Math.round(imgSize),
-      Math.round(imgSize)
+      img,
+      Math.floor(x - imgSize / 2),
+      Math.floor(y - imgSize / 2),
+      Math.floor(imgSize),
+      Math.floor(imgSize)
     );
     ctx.restore();
   }
@@ -288,18 +261,16 @@ export function drawSquarePiece(ctx, x, y, size, color, img) {
   ctx.restore();
 
   if (isDrawableImage(img)) {
-    const buf = getResizedForDpr(img, size);
     ctx.save();
     ctx.beginPath();
     ctx.rect(left, top, size, size);
     ctx.clip();
-
     ctx.drawImage(
-      buf || img,
-      Math.round(left),
-      Math.round(top),
-      Math.round(size),
-      Math.round(size)
+      img,
+      Math.floor(left),
+      Math.floor(top),
+      Math.floor(size),
+      Math.floor(size)
     );
     ctx.restore();
   }
@@ -502,14 +473,12 @@ async function drawAxes50x50(ctx, margin, cellSize) {
 
         const x = margin - cellSize;
         const y = margin + (i - 1) * cellSize;
-        const targetCss = cellSize * 0.6;
-        const buf = getResizedForDpr(img, targetCss);
         ctx.drawImage(
-          buf || img,
-          Math.round(x + cellSize * 0.2),
-          Math.round(y + cellSize * 0.2),
-          Math.round(targetCss),
-          Math.round(targetCss)
+          img,
+          Math.floor(x + cellSize * 0.2),
+          Math.floor(y + cellSize * 0.2),
+          Math.floor(cellSize * 0.6),
+          Math.floor(cellSize * 0.6)
         );
       } catch (error) {
         console.warn(`Nie można załadować obrazu img${i}.png`);
@@ -551,13 +520,12 @@ async function drawAxes50x50(ctx, margin, cellSize) {
 
       const x = margin + (i - 1) * cellSize;
       const y = margin - cellSize;
-      const buf = getResizedForDpr(img, cellSize);
       ctx.drawImage(
-        buf || img,
-        Math.round(x),
-        Math.round(y),
-        Math.round(cellSize),
-        Math.round(cellSize)
+        img,
+        Math.floor(x),
+        Math.floor(y),
+        Math.floor(cellSize),
+        Math.floor(cellSize)
       );
     } catch (error) {
       console.warn(`Nie można załadować obrazu img${i}.png`);
@@ -677,6 +645,7 @@ function drawPicture(ctx, marginForAxesX, marginForAxesY, pieces) {
       for (let p of pieces) {
         if (!p.isPixel) continue;
         const img = p.img ? boardGameState.loadedImages[p.img] : null;
+
         drawSquarePiece(
           ctx,
           p.x + marginForAxesX,
@@ -689,10 +658,11 @@ function drawPicture(ctx, marginForAxesX, marginForAxesY, pieces) {
       for (let p of pieces) {
         if (p.isPixel) continue;
         const img = p.img ? boardGameState.loadedImages[p.img] : null;
+
         drawCirclePiece(
           ctx,
-          p.x + marginForAxesX,
-          p.y + marginForAxesY,
+          Math.floor(p.x + marginForAxesX),
+          Math.floor(p.y + marginForAxesY),
           boardGameState.cellSize,
           p.color,
           img
@@ -927,10 +897,6 @@ export async function drawPdfFile(coordToPrint) {
     boardHeight + boardGameState.codeMargin + codeSectionHeight + marginForAxes;
   const tmpCtx = tmpCanvas.getContext("2d");
 
-  // Konfiguracja wysokiej jakości renderowania dla PDF
-  tmpCtx.imageSmoothingEnabled = true;
-  tmpCtx.imageSmoothingQuality = "high";
-
   tmpCtx.fillStyle = "#fff";
   tmpCtx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
 
@@ -1077,11 +1043,6 @@ export async function drawPdfFile(coordToPrint) {
   logoCanvas.width = logo.width;
   logoCanvas.height = logo.height;
   const logoCtx = logoCanvas.getContext("2d");
-
-  // Konfiguracja wysokiej jakości renderowania dla logo
-  logoCtx.imageSmoothingEnabled = true;
-  logoCtx.imageSmoothingQuality = "high";
-
   logoCtx.drawImage(logo, 0, 0);
   const logoBase64 = logoCanvas.toDataURL("image/png");
   pdf.addImage(logoBase64, "PNG", 10, 10, 30, 15);
@@ -1112,10 +1073,6 @@ export async function createDiscImage(img, color, size = 60) {
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d");
-
-  // Konfiguracja wysokiej jakości renderowania
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
 
   if (img) {
     const loadedImg = await loadImageAsync(img);
