@@ -30,37 +30,30 @@ import {
 const board = document.getElementById("board");
 const ctxBoard = board.getContext("2d");
 
+ctxBoard.imageSmoothingEnabled = true;
+
 const boardWrapper = document.getElementById("boardWrapper");
 
 const boardOverlay = document.getElementById("boardOverlay");
 const ctxOverlay = boardOverlay.getContext("2d");
 
 function updateCanvasSize() {
-  // Ustawmy najpierw cellSize w zależności od trybu
+  // --- twoja logika ---
   if (boardGameState.isBoard50x50) {
     boardGameState.cellSize = 100;
-    // 50x50 ma sekcję kodu – zastosuj margines jak na back
     boardGameState.codeMargin = 100;
-    // Dodaj klasę CSS dla wrapper
     boardWrapper.className = "board50x50";
     boardOverlay.style.left = "140px";
     boardOverlay.style.top = "140px";
   } else {
     boardGameState.cellSize = 80;
-    // Usuń klasę CSS dla wrapper
     boardWrapper.className = "";
     boardOverlay.style.left = "40px";
     boardOverlay.style.top = "40px";
-    if (boardGameState.isFront) {
-      boardGameState.codeMargin = 0;
-    } else {
-      boardGameState.codeMargin = 80;
-    }
+    boardGameState.codeMargin = boardGameState.isFront ? 0 : 80;
   }
 
-  // Oblicz rozmiary z prawidłową wartością cellSize
   let boardWidth, boardHeight;
-
   if (boardGameState.isBoard50x50) {
     boardWidth = 5 * boardGameState.cellSize;
     boardHeight =
@@ -78,10 +71,31 @@ function updateCanvasSize() {
       boardGameState.codeRows * boardGameState.cellSize;
   }
 
-  board.width = boardWidth;
-  board.height = boardHeight;
-  boardOverlay.width = boardWidth;
-  boardOverlay.height = boardHeight;
+  // --- KLUCZOWE: obsługa HiDPI ---
+  const dpr = window.devicePixelRatio || 1;
+
+  // ustaw rozmiar CSS
+  board.style.width = boardWidth + "px";
+  board.style.height = boardHeight + "px";
+  boardOverlay.style.width = boardWidth + "px";
+  boardOverlay.style.height = boardHeight + "px";
+
+  // ustaw rozdzielczość wewnętrzną
+  board.width = boardWidth * dpr;
+  board.height = boardHeight * dpr;
+  boardOverlay.width = boardWidth * dpr;
+  boardOverlay.height = boardHeight * dpr;
+
+  // przeskaluj konteksty
+  ctxBoard.setTransform(1, 0, 0, 1, 0, 0); // reset transform
+  ctxBoard.scale(dpr, dpr);
+
+  ctxOverlay.setTransform(1, 0, 0, 1, 0, 0);
+  ctxOverlay.scale(dpr, dpr);
+
+  // ustaw opcje jakości
+  ctxBoard.imageSmoothingEnabled = true;
+  ctxBoard.imageSmoothingQuality = "medium";
 
   drawLabels(boardHeight, boardWidth);
 }
@@ -1063,6 +1077,7 @@ function initGame() {
   registerBoardWrapperEvents(boardWrapper, boardWrapperHandlers);
   registerWindowMouseEvents(windowMouseHandlers);
   registerUIEvents(uiHandlers);
+  updateCanvasSize();
   renderBoard();
 }
 
