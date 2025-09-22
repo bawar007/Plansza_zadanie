@@ -297,7 +297,8 @@ export function drawSquarePiece(ctx, x, y, size, color, img) {
     ctx.beginPath();
     ctx.rect(left, top, size, size);
     ctx.clip();
-
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     // Użyj drawImage bez skalowania jeśli mamy bufor
     if (bufferedImg) {
       ctx.drawImage(finalImg, Math.floor(left), Math.floor(top));
