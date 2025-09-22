@@ -43,6 +43,74 @@ export function loadImageAsync(src) {
   });
 }
 
+// System buforowania obrazów w różnych rozmiarach
+const imageBufferCache = new Map(); // src -> Map(size -> canvas)
+
+// Popularne rozmiary używane w aplikacji
+const COMMON_SIZES = [75, 80, 100, 72, 60, 48];
+
+export function createImageBuffer(sourceImg, targetSize) {
+  const canvas = document.createElement("canvas");
+  canvas.width = targetSize;
+  canvas.height = targetSize;
+  const ctx = canvas.getContext("2d");
+
+  // Włącz wygładzanie dla lepszej jakości
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  // Narysuj przeskalowany obraz na buforze
+  ctx.drawImage(sourceImg, 0, 0, targetSize, targetSize);
+  return canvas;
+}
+
+export async function loadImageWithBuffers(src) {
+  // Załaduj oryginalny obraz
+  const originalImg = await loadImageAsync(src);
+  if (!originalImg) return null;
+
+  // Utwórz mapę buforów dla tego obrazu
+  const buffers = new Map();
+
+  // Stwórz bufory dla popularnych rozmiarów
+  COMMON_SIZES.forEach((size) => {
+    const buffer = createImageBuffer(originalImg, size);
+    buffers.set(size, buffer);
+  });
+
+  // Zachowaj oryginalny obraz
+  buffers.set("original", originalImg);
+
+  // Zapisz w cache
+  imageBufferCache.set(src, buffers);
+
+  return originalImg;
+}
+
+export function getBufferedImage(src, targetSize) {
+  const buffers = imageBufferCache.get(src);
+  if (!buffers) return null;
+
+  // Sprawdź czy mamy bufor dokładnie tego rozmiaru
+  if (buffers.has(targetSize)) {
+    return buffers.get(targetSize);
+  }
+
+  // Jeśli nie ma bufora tego rozmiaru, stwórz go
+  const originalImg = buffers.get("original");
+  if (originalImg) {
+    const newBuffer = createImageBuffer(originalImg, targetSize);
+    buffers.set(targetSize, newBuffer);
+    return newBuffer;
+  }
+
+  return null;
+}
+
+export function clearImageBuffers() {
+  imageBufferCache.clear();
+}
+
 export function showMessage(txt) {
   const msg = document.getElementById("message");
   msg.textContent = txt;

@@ -1,6 +1,7 @@
 import {
   isOccupied,
   getImage,
+  loadImageWithBuffers,
   showMessage,
   getMousePos,
   getCoordsList,
@@ -322,9 +323,12 @@ const boardMouseHandlers = {
           img
         );
       } else {
-        getImage(dragging.img, (imgLoaded) => {
-          loadedImages[dragging.img] = imgLoaded;
-          renderBoard();
+        // Użyj nowego systemu buforowania
+        loadImageWithBuffers(dragging.img).then((imgLoaded) => {
+          if (imgLoaded) {
+            loadedImages[dragging.img] = imgLoaded;
+            renderBoard();
+          }
         });
         drawCirclePiece(
           ctxOverlay,

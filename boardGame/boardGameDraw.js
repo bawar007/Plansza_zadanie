@@ -3,6 +3,8 @@ import { blockColors, sections } from "./boardGameData.js";
 import {
   isDrawableImage,
   loadImageAsync,
+  loadImageWithBuffers,
+  getBufferedImage,
   wrapText,
 } from "./boardGameHelpers.js";
 
@@ -227,21 +229,41 @@ export function drawCirclePiece(ctx, x, y, size, color, img) {
   ctx.stroke();
   ctx.restore();
 
-  // Rysuj obraz tylko jeśli to prawidłowy typ zasobu graficznego
-
+  // Rysuj obraz używając buforowanej wersji
   if (isDrawableImage(img)) {
     const imgSize = color === "#ffffff" ? size * 0.9 : size * 0.8;
+    const targetSize = Math.floor(imgSize);
+
+    // Jeśli img to oryginalny Image object z src, użyj bufora
+    let bufferedImg = null;
+    if (img.src) {
+      bufferedImg = getBufferedImage(img.src, targetSize);
+    }
+
+    const finalImg = bufferedImg || img;
+
     ctx.save();
     ctx.beginPath();
     ctx.arc(x, y, imgSize / 2, 0, Math.PI * 2);
     ctx.clip();
-    ctx.drawImage(
-      img,
-      Math.floor(x - imgSize / 2),
-      Math.floor(y - imgSize / 2),
-      Math.floor(imgSize),
-      Math.floor(imgSize)
-    );
+
+    // Użyj drawImage bez skalowania jeśli mamy bufor
+    if (bufferedImg) {
+      ctx.drawImage(
+        finalImg,
+        Math.floor(x - imgSize / 2),
+        Math.floor(y - imgSize / 2)
+      );
+    } else {
+      // Fallback - skaluj tylko jeśli nie ma bufora
+      ctx.drawImage(
+        finalImg,
+        Math.floor(x - imgSize / 2),
+        Math.floor(y - imgSize / 2),
+        Math.floor(imgSize),
+        Math.floor(imgSize)
+      );
+    }
     ctx.restore();
   }
 }
@@ -261,17 +283,34 @@ export function drawSquarePiece(ctx, x, y, size, color, img) {
   ctx.restore();
 
   if (isDrawableImage(img)) {
+    const targetSize = Math.floor(size);
+
+    // Jeśli img to oryginalny Image object z src, użyj bufora
+    let bufferedImg = null;
+    if (img.src) {
+      bufferedImg = getBufferedImage(img.src, targetSize);
+    }
+
+    const finalImg = bufferedImg || img;
+
     ctx.save();
     ctx.beginPath();
     ctx.rect(left, top, size, size);
     ctx.clip();
-    ctx.drawImage(
-      img,
-      Math.floor(left),
-      Math.floor(top),
-      Math.floor(size),
-      Math.floor(size)
-    );
+
+    // Użyj drawImage bez skalowania jeśli mamy bufor
+    if (bufferedImg) {
+      ctx.drawImage(finalImg, Math.floor(left), Math.floor(top));
+    } else {
+      // Fallback - skaluj tylko jeśli nie ma bufora
+      ctx.drawImage(
+        finalImg,
+        Math.floor(left),
+        Math.floor(top),
+        Math.floor(size),
+        Math.floor(size)
+      );
+    }
     ctx.restore();
   }
 }
@@ -886,17 +925,24 @@ export async function drawPdfFile(coordToPrint) {
   const boardHeight = coordToPrint
     ? (sizeRows - 4) * boardGameState.cellSize
     : sizeRows * boardGameState.cellSize;
+
+  const scaleFactor = 4; // np. 4x większy canvas
+
   const codeSectionY = boardHeight + boardGameState.codeMargin;
   const codeSectionHeight = codeRows * boardGameState.cellSize;
 
   const marginForAxes = boardGameState.isBoard50x50 ? 140 : !isFront ? 40 : 0;
 
   const tmpCanvas = document.createElement("canvas");
-  tmpCanvas.width = boardWidth + marginForAxes;
+  tmpCanvas.width = (boardWidth + marginForAxes) * scaleFactor;
   tmpCanvas.height =
-    boardHeight + boardGameState.codeMargin + codeSectionHeight + marginForAxes;
+    (boardHeight +
+      boardGameState.codeMargin +
+      codeSectionHeight +
+      marginForAxes) *
+    scaleFactor;
   const tmpCtx = tmpCanvas.getContext("2d");
-
+  tmpCtx.scale(scaleFactor, scaleFactor);
   tmpCtx.fillStyle = "#fff";
   tmpCtx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
 
@@ -1011,7 +1057,7 @@ export async function drawPdfFile(coordToPrint) {
   }
 
   // Zamień canvas na obrazek
-  const imgData = tmpCanvas.toDataURL("image/png");
+  const imgData = tmpCanvas.toDataURL("image/jpeg", 1.0);
   const pdfW = 210;
   const pdfH = 297;
 
@@ -1075,7 +1121,7 @@ export async function createDiscImage(img, color, size = 60) {
   const ctx = canvas.getContext("2d");
 
   if (img) {
-    const loadedImg = await loadImageAsync(img);
+    const loadedImg = await loadImageWithBuffers(img);
     if (loadedImg) {
       drawCirclePiece(ctx, size / 2, size / 2, size, color, loadedImg);
     }
