@@ -216,6 +216,32 @@ body {
   pointer-events: none;
 }
 
+@media (max-width: 1024px) and (orientation: landscape) {
+  #gameMain {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+  }
+  #gameMain .pickerPanel {
+    width: 30% !important;
+  }
+  #gameMain .pickerPanel #picker {
+    height: 300px !important;
+  }
+  #gameMain .pickerPanel .buttonsContainer {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+  #gameMain .pickerPanel .buttonsContainer .boardGameBtn {
+    width: 90% !important;
+  }
+  #gameMain #mainBoardContainer {
+    max-width: 70% !important;
+  }
+  #gameMain #mainBoardContainer #boardWrapper {
+    max-width: 100%;
+    margin: 40px 0;
+  }
+}
 @media (max-width: 1024px) {
   .mainWrapper #gameMain {
     flex-direction: column;
@@ -231,7 +257,7 @@ body {
     height: 250px;
   }
   .mainWrapper #gameMain .pickerPanel .buttonsContainer .boardGameBtn {
-    width: 30% !important;
+    width: 30%;
     margin: 5px;
   }
   .mainWrapper #gameMain #mainBoardContainer {
@@ -248,19 +274,17 @@ body {
 @media (max-width: 600px) {
   .mainWrapper #gameMain {
     flex-direction: column;
-    align-items: stretch;
     margin-top: 10px;
   }
   .mainWrapper #gameMain .pickerPanel {
     width: 90%;
-    min-width: 0;
     padding: 5px 0 0 0;
     background-color: white;
     height: auto;
     box-shadow: none;
   }
   .mainWrapper #gameMain .pickerPanel #picker {
-    width: 100vw;
+    width: 100%;
     min-width: 0;
     padding: 5px;
     height: 180px;
@@ -272,16 +296,18 @@ body {
   }
   .mainWrapper #gameMain .pickerPanel .buttonsContainer {
     flex-direction: column;
-    align-items: stretch;
-    width: 100vw;
+    width: 100%;
   }
   .mainWrapper #gameMain .pickerPanel .buttonsContainer .boardGameBtn {
-    width: 95vw !important;
+    width: 95% !important;
     margin: 5px 0;
     font-size: 18px !important;
   }
+  .mainWrapper #gameMain .pickerPanel .buttonsContainer #gridSizeSelector {
+    width: 95%;
+  }
   .mainWrapper #gameMain #mainBoardContainer #boardWrapper {
-    width: 100vw;
+    width: 100%;
     padding: 10px 0 0 0;
     max-height: 50vh;
     margin: 10px 0;

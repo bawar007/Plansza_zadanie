@@ -225,6 +225,34 @@ body {
   }
 }
 
+@media (max-width: 1024px) and (orientation: landscape) {
+  #gameMain {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    .pickerPanel {
+      width: 30% !important;
+
+      #picker {
+        height: 300px !important;
+      }
+      .buttonsContainer {
+        flex-direction: column !important;
+        width: 100% !important;
+        .boardGameBtn {
+          width: 90% !important;
+        }
+      }
+    }
+    #mainBoardContainer {
+      max-width: 70% !important;
+      #boardWrapper {
+        max-width: 100%;
+        margin: 40px 0;
+      }
+    }
+  }
+}
+
 @media (max-width: 1024px) {
   .mainWrapper {
     #gameMain {
@@ -240,7 +268,7 @@ body {
         }
         .buttonsContainer {
           .boardGameBtn {
-            width: 30% !important;
+            width: 30%;
             margin: 5px;
           }
         }
@@ -264,17 +292,15 @@ body {
   .mainWrapper {
     #gameMain {
       flex-direction: column;
-      align-items: stretch;
       margin-top: 10px;
       .pickerPanel {
         width: 90%;
-        min-width: 0;
         padding: 5px 0 0 0;
         background-color: white;
         height: auto;
         box-shadow: none;
         #picker {
-          width: 100vw;
+          width: 100%;
           min-width: 0;
           padding: 5px;
           height: 180px;
@@ -287,18 +313,21 @@ body {
 
         .buttonsContainer {
           flex-direction: column;
-          align-items: stretch;
-          width: 100vw;
+
+          width: 100%;
           .boardGameBtn {
-            width: 95vw !important;
+            width: 95% !important;
             margin: 5px 0;
             font-size: 18px !important;
+          }
+          #gridSizeSelector {
+            width: 95%;
           }
         }
       }
       #mainBoardContainer {
         #boardWrapper {
-          width: 100vw;
+          width: 100%;
           padding: 10px 0 0 0;
           max-height: 50vh;
           margin: 10px 0;
