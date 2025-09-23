@@ -194,12 +194,7 @@ body {
   width: 100px;
   height: 500px;
 }
-.mainWrapper
-  #gameMain
-  #mainBoardContainer
-  #boardWrapper
-  #boardAndXAxisWrapper
-  #xAxis {
+.mainWrapper #gameMain #mainBoardContainer #boardWrapper #boardAndXAxisWrapper #xAxis {
   display: flex;
   justify-content: center;
   margin-bottom: 2px;
@@ -207,23 +202,13 @@ body {
   top: 10px;
   left: 40px;
 }
-.mainWrapper
-  #gameMain
-  #mainBoardContainer
-  #boardWrapper
-  #boardAndXAxisWrapper
-  #xAxis.board50x50 {
+.mainWrapper #gameMain #mainBoardContainer #boardWrapper #boardAndXAxisWrapper #xAxis.board50x50 {
   top: 30px;
   left: 40px;
   width: 500px;
   height: 100px;
 }
-.mainWrapper
-  #gameMain
-  #mainBoardContainer
-  #boardWrapper
-  #boardAndXAxisWrapper
-  #boardOverlay {
+.mainWrapper #gameMain #mainBoardContainer #boardWrapper #boardAndXAxisWrapper #boardOverlay {
   position: absolute;
   left: 40px;
   top: 40px;
@@ -282,11 +267,19 @@ body {
     max-width: 100%;
     margin: 40px 0;
   }
-  button {
-    font-size: 20px !important;
-  }
 }
 @media (max-width: 600px) {
+  .mainWrapper .banner img {
+    height: 50px;
+  }
+  .mainWrapper .banner h1 {
+    font-size: 18px;
+    padding: 1rem;
+  }
+  .mainWrapper .banner .back-link {
+    font-size: 10px;
+    padding: 8px 10px;
+  }
   .mainWrapper #gameMain {
     flex-direction: column;
     margin-top: 10px;
@@ -309,6 +302,11 @@ body {
     height: 60%;
     margin-top: 5px;
   }
+  .mainWrapper #gameMain .pickerPanel #picker .pickerItemsWrapper .imgButton {
+    width: 40px !important;
+    height: 40px !important;
+    margin: 3px;
+  }
   .mainWrapper #gameMain .pickerPanel .buttonsContainer {
     flex-direction: column;
     width: 100%;
@@ -323,8 +321,6 @@ body {
   }
   .mainWrapper #gameMain #mainBoardContainer #boardWrapper {
     width: 100%;
-    padding: 10px 0 0 0;
-    max-height: 50vh;
     margin: 10px 0;
   }
   .imgButton {
@@ -346,6 +342,23 @@ body {
   border: 1px solid #ced4da;
   border-radius: 0.25rem;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+@media (max-width: 800px) {
+  #boardWrapper.board50x50 {
+    padding: 100px 40px 40px 100px !important;
+  }
+  #boardWrapper.board50x50 #yAxis {
+    top: 100px !important;
+  }
+}
+@media (min-width: 801px) and (max-width: 1399px) {
+  #boardWrapper.board50x50 {
+    padding: 120px 40px 40px 120px !important;
+  }
+  #boardWrapper.board50x50 #yAxis {
+    top: 120px !important;
+  }
 }
 
 /*# sourceMappingURL=boardStyle.css.map */

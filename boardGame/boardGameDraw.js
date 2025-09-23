@@ -365,16 +365,18 @@ export function drawLabels(height, width) {
     yAxis.className = "board50x50";
     xAxis.className = "board50x50";
 
+    const sizeM = boardGameState.cellSize;
+
     // Dla maty 50x50 - osie z obrazkami
     yAxis.style.height = height + "px";
-    yAxis.style.width = "100px";
-    xAxis.style.height = "100px";
-    xAxis.style.width = width + 100 + "px";
+    yAxis.style.width = sizeM + "px";
+    xAxis.style.height = sizeM + "px";
+    xAxis.style.width = width + sizeM + "px";
 
     const createDivWrapper = () => {
       const imgWrapper = document.createElement("div");
-      imgWrapper.style.height = "100px";
-      imgWrapper.style.width = "100px";
+      imgWrapper.style.height = sizeM + "px";
+      imgWrapper.style.width = sizeM + "px";
       imgWrapper.style.display = "flex";
       imgWrapper.style.alignItems = "center";
       return imgWrapper;
@@ -388,8 +390,8 @@ export function drawLabels(height, width) {
 
         const imgElement = document.createElement("img");
         imgElement.src = `assets/mata50x50/osY/osY_img${i}.png`;
-        imgElement.style.width = "60px";
-        imgElement.style.height = "60px";
+        imgElement.style.width = sizeM * 0.6 + "px";
+        imgElement.style.height = sizeM * 0.6 + "px";
         imgElement.style.display = "block";
         imgWrapper.appendChild(imgElement);
         yAxis.appendChild(imgWrapper);
@@ -414,8 +416,8 @@ export function drawLabels(height, width) {
         i === 1
           ? "assets/images/logo.png"
           : `assets/mata50x50/osX/osX_img${i - 1}.png`;
-      imgElement.style.width = i === 1 ? "90px" : "90px";
-      imgElement.style.height = i === 1 ? null : "90px";
+      imgElement.style.width = sizeM * 0.9 + "px";
+      imgElement.style.height = i === 1 ? null : sizeM * 0.9 + "px";
       imgElement.style.display = "inline-block";
       imgWrapper.appendChild(imgElement);
       xAxis.appendChild(imgWrapper);

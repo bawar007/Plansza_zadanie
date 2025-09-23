@@ -39,24 +39,40 @@ const ctxOverlay = boardOverlay.getContext("2d");
 function updateCanvasSize() {
   // Ustawmy najpierw cellSize w zależności od trybu
   if (boardGameState.isBoard50x50) {
-    boardGameState.cellSize = 100;
-    // 50x50 ma sekcję kodu – zastosuj margines jak na back
-    boardGameState.codeMargin = 100;
+    const isSmallScreen = window.innerWidth < 800;
+    const isNormalScreen = window.innerWidth > 1400;
+    const sizeM = isNormalScreen ? 100 : isSmallScreen ? 65 : 80;
+    boardGameState.cellSize = sizeM;
+    boardGameState.codeMargin = sizeM;
     // Dodaj klasę CSS dla wrapper
     boardWrapper.className = "board50x50";
-    boardOverlay.style.left = "140px";
-    boardOverlay.style.top = "140px";
+    boardOverlay.style.left = isNormalScreen
+      ? 140 + "px"
+      : isSmallScreen
+      ? 100 + "px"
+      : 120 + "px";
+    boardOverlay.style.top = isNormalScreen
+      ? 140 + "px"
+      : isSmallScreen
+      ? 100 + "px"
+      : 120 + "px";
   } else {
     // Usuń klasę CSS dla wrapper
     boardWrapper.className = "";
     boardOverlay.style.left = "40px";
     boardOverlay.style.top = "40px";
     if (boardGameState.isFront) {
+      const isSmallScreen = window.innerWidth < 800;
+      const isNormalScreen = window.innerWidth > 1400;
+      const sizeM = isNormalScreen ? 80 : isSmallScreen ? 55 : 70;
       boardGameState.codeMargin = 0;
-      boardGameState.cellSize = 80;
+      boardGameState.cellSize = sizeM;
     } else {
-      boardGameState.codeMargin = 70;
-      boardGameState.cellSize = 70;
+      const isSmallScreen = window.innerWidth < 800;
+      const isNormalScreen = window.innerWidth > 1400;
+      const sizeM = isNormalScreen ? 80 : isSmallScreen ? 55 : 70;
+      boardGameState.codeMargin = sizeM;
+      boardGameState.cellSize = sizeM;
     }
   }
 
@@ -137,7 +153,6 @@ function renderBoard() {
         renderBoard
       );
       board.style.border = "2px solid #000";
-      boardWrapper.style.alignItems = "center";
     } else {
       drawBoard(
         ctxOverlay,
@@ -1085,5 +1100,13 @@ function initGame() {
   updateCanvasSize();
   renderBoard();
 }
+
+window.addEventListener("resize", () => {
+  // boardGameState.pieces50x50.length = 0;
+  //boardGameState.piecesFront.length = 0;
+  // boardGameState.piecesGrid.length = 0;
+  updateCanvasSize();
+  renderBoard();
+});
 
 initGame();

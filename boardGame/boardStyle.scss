@@ -282,14 +282,23 @@ body {
       }
     }
   }
-
-  button {
-    font-size: 20px !important;
-  }
 }
 
 @media (max-width: 600px) {
   .mainWrapper {
+    .banner {
+      img {
+        height: 50px;
+      }
+      h1 {
+        font-size: 18px;
+        padding: 1rem;
+      }
+      .back-link {
+        font-size: 10px;
+        padding: 8px 10px;
+      }
+    }
     #gameMain {
       flex-direction: column;
       margin-top: 10px;
@@ -308,6 +317,11 @@ body {
           .pickerItemsWrapper {
             height: 60%;
             margin-top: 5px;
+            .imgButton {
+              width: 40px !important;
+              height: 40px !important;
+              margin: 3px;
+            }
           }
         }
 
@@ -328,8 +342,6 @@ body {
       #mainBoardContainer {
         #boardWrapper {
           width: 100%;
-          padding: 10px 0 0 0;
-          max-height: 50vh;
           margin: 10px 0;
         }
       }
@@ -356,4 +368,26 @@ body {
   border: 1px solid #ced4da;
   border-radius: 0.25rem;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+@media (max-width: 800px) {
+  #boardWrapper {
+    &.board50x50 {
+      padding: 100px 40px 40px 100px !important;
+      #yAxis {
+        top: 100px !important;
+      }
+    }
+  }
+}
+
+@media (min-width: 801px) and (max-width: 1399px) {
+  #boardWrapper {
+    &.board50x50 {
+      padding: 120px 40px 40px 120px !important;
+      #yAxis {
+        top: 120px !important;
+      }
+    }
+  }
 }
