@@ -47,15 +47,16 @@ function updateCanvasSize() {
     boardOverlay.style.left = "140px";
     boardOverlay.style.top = "140px";
   } else {
-    boardGameState.cellSize = 80;
     // Usuń klasę CSS dla wrapper
     boardWrapper.className = "";
     boardOverlay.style.left = "40px";
     boardOverlay.style.top = "40px";
     if (boardGameState.isFront) {
       boardGameState.codeMargin = 0;
+      boardGameState.cellSize = 80;
     } else {
-      boardGameState.codeMargin = 80;
+      boardGameState.codeMargin = 70;
+      boardGameState.cellSize = 70;
     }
   }
 

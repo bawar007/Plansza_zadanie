@@ -194,7 +194,12 @@ body {
   width: 100px;
   height: 500px;
 }
-.mainWrapper #gameMain #mainBoardContainer #boardWrapper #boardAndXAxisWrapper #xAxis {
+.mainWrapper
+  #gameMain
+  #mainBoardContainer
+  #boardWrapper
+  #boardAndXAxisWrapper
+  #xAxis {
   display: flex;
   justify-content: center;
   margin-bottom: 2px;
@@ -202,13 +207,23 @@ body {
   top: 10px;
   left: 40px;
 }
-.mainWrapper #gameMain #mainBoardContainer #boardWrapper #boardAndXAxisWrapper #xAxis.board50x50 {
+.mainWrapper
+  #gameMain
+  #mainBoardContainer
+  #boardWrapper
+  #boardAndXAxisWrapper
+  #xAxis.board50x50 {
   top: 30px;
   left: 40px;
   width: 500px;
   height: 100px;
 }
-.mainWrapper #gameMain #mainBoardContainer #boardWrapper #boardAndXAxisWrapper #boardOverlay {
+.mainWrapper
+  #gameMain
+  #mainBoardContainer
+  #boardWrapper
+  #boardAndXAxisWrapper
+  #boardOverlay {
   position: absolute;
   left: 40px;
   top: 40px;

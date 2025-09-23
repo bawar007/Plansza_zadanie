@@ -1,7 +1,7 @@
 export const boardGameState = {
   frontSizeRows: 9,
   backSizeRows: 10,
-  cellSize: 80,
+  cellSize: 70,
   isFront: false,
   dragging: null,
   prevPiece: null,
