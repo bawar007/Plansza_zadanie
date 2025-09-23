@@ -136,8 +136,9 @@ export function getTouchPos(e, board, cellSize) {
   return { x, y };
 }
 
-export function getCoordsList(backSizeRows, board, pieces, codeMargin) {
-  const cellSize = board.width / backSizeRows;
+export function getCoordsList(backSizeRows, pieces, codeMargin) {
+  // Użyj rzeczywistego cellSize ze stanu zamiast obliczania z canvas
+  const cellSize = boardGameState.cellSize;
   const boardHeight = backSizeRows * cellSize;
 
   const groups = {};
@@ -151,8 +152,6 @@ export function getCoordsList(backSizeRows, board, pieces, codeMargin) {
       row = Math.floor(p.y / cellSize) + 1;
       label = `${String.fromCharCode(65 + col)}${row}`;
     } else continue;
-    // row = Math.floor((p.y - boardHeight - codeMargin) / cellSize) + 1;
-    // label = `${String.fromCharCode(65 + col)}K${row}`;
 
     const imgKey = p.img || null;
     const colorKey = p.color || null;

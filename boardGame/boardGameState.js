@@ -15,4 +15,5 @@ export const boardGameState = {
   isPainting: false,
   paintColor: null,
   isBoard50x50: false,
+  scaleFactor: 2, // Mnożnik rozdzielczości (2x, 3x, 4x)
 };

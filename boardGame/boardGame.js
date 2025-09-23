@@ -102,43 +102,58 @@ function updateClearBoardButton() {
 
 function renderBoard() {
   if (boardGameState.isBoard50x50) {
-    drawBoard(ctxOverlay, ctxBoard, {
-      isFront: false,
-      pieces: boardGameState.pieces50x50,
-      codeRows: boardGameState.codeRows,
-      boardRows: 5,
-      boardWidth: 5 * boardGameState.cellSize,
-      boardHeight:
-        boardGameState.codeMargin +
-        5 * boardGameState.cellSize +
-        boardGameState.codeRows * boardGameState.cellSize,
-    });
+    drawBoard(
+      ctxOverlay,
+      ctxBoard,
+      {
+        isFront: false,
+        pieces: boardGameState.pieces50x50,
+        codeRows: boardGameState.codeRows,
+        boardRows: 5,
+        boardWidth: 5 * boardGameState.cellSize,
+        boardHeight:
+          boardGameState.codeMargin +
+          5 * boardGameState.cellSize +
+          boardGameState.codeRows * boardGameState.cellSize,
+      },
+      renderBoard
+    );
     board.style.border = "none";
     boardWrapper.style.alignItems = "flex-start";
   } else {
     if (boardGameState.isFront) {
-      drawBoard(ctxOverlay, ctxBoard, {
-        isFront: boardGameState.isFront,
-        pieces: boardGameState.piecesFront,
-        codeRows: 0,
-        boardRows: boardGameState.frontSizeRows,
-        boardWidth: boardGameState.frontSizeRows * boardGameState.cellSize,
-        boardHeight: boardGameState.frontSizeRows * boardGameState.cellSize,
-      });
+      drawBoard(
+        ctxOverlay,
+        ctxBoard,
+        {
+          isFront: boardGameState.isFront,
+          pieces: boardGameState.piecesFront,
+          codeRows: 0,
+          boardRows: boardGameState.frontSizeRows,
+          boardWidth: boardGameState.frontSizeRows * boardGameState.cellSize,
+          boardHeight: boardGameState.frontSizeRows * boardGameState.cellSize,
+        },
+        renderBoard
+      );
       board.style.border = "2px solid #000";
       boardWrapper.style.alignItems = "center";
     } else {
-      drawBoard(ctxOverlay, ctxBoard, {
-        isFront: boardGameState.isFront,
-        pieces: boardGameState.piecesGrid,
-        codeRows: boardGameState.codeRows,
-        boardRows: boardGameState.backSizeRows,
-        boardWidth: boardGameState.backSizeRows * boardGameState.cellSize,
-        boardHeight:
-          boardGameState.codeMargin +
-          boardGameState.backSizeRows * boardGameState.cellSize +
-          boardGameState.codeRows * boardGameState.cellSize,
-      });
+      drawBoard(
+        ctxOverlay,
+        ctxBoard,
+        {
+          isFront: boardGameState.isFront,
+          pieces: boardGameState.piecesGrid,
+          codeRows: boardGameState.codeRows,
+          boardRows: boardGameState.backSizeRows,
+          boardWidth: boardGameState.backSizeRows * boardGameState.cellSize,
+          boardHeight:
+            boardGameState.codeMargin +
+            boardGameState.backSizeRows * boardGameState.cellSize +
+            boardGameState.codeRows * boardGameState.cellSize,
+        },
+        renderBoard
+      );
       board.style.border = "none";
       boardWrapper.style.alignItems = "flex-start";
     }
@@ -815,7 +830,6 @@ const uiHandlers = {
   onDownloadCoords: () => {
     const coords = getCoordsList(
       boardGameState.backSizeRows,
-      board,
       boardGameState.piecesGrid,
       boardGameState.codeMargin
     );

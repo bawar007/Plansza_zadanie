@@ -2,7 +2,6 @@ import { boardGameState } from "./boardGameState.js";
 import { blockColors, sections } from "./boardGameData.js";
 import {
   isDrawableImage,
-  loadImageAsync,
   loadImageWithBuffers,
   getBufferedImage,
   wrapText,
@@ -16,43 +15,83 @@ export function drawCell(ctxBoard, x, y, size, color, arc) {
   ctxBoard.fillStyle = color ? color : "white";
   ctxBoard.fill();
   ctxBoard.strokeStyle = color ? color : "black";
+  ctxBoard.strokeSize = 1;
   ctxBoard.stroke();
 }
 
-export function drawBoard(ctxOverlay, ctxBoard, options) {
+export function drawBoard(ctxOverlay, ctxBoard, options, onImageLoaded = null) {
+  drawBoardHighRes(ctxOverlay, ctxBoard, options, onImageLoaded);
+}
+
+function drawBoardHighRes(ctxOverlay, ctxBoard, options, onImageLoaded) {
+  const { boardHeight, boardWidth } = options;
+  const scaleFactor = boardGameState.scaleFactor;
+
+  // Ustawienia głównego canvas (wyświetlanie)
+  ctxBoard.canvas.style.width = boardWidth + "px";
+  ctxBoard.canvas.style.height = boardHeight + "px";
+
+  // Ustawienia fizycznego rozmiaru canvas (renderowanie)
+  ctxBoard.canvas.width = boardWidth * scaleFactor;
+  ctxBoard.canvas.height = boardHeight * scaleFactor;
+
+  // Overlay bez skalowania (dla interfejsu)
+  ctxOverlay.canvas.width = boardWidth;
+  ctxOverlay.canvas.height = boardHeight;
+  ctxOverlay.canvas.style.width = boardWidth + "px";
+  ctxOverlay.canvas.style.height = boardHeight + "px";
+
+  // Wyczyść canvas
+  ctxBoard.clearRect(0, 0, ctxBoard.canvas.width, ctxBoard.canvas.height);
+  ctxOverlay.clearRect(0, 0, ctxOverlay.canvas.width, ctxOverlay.canvas.height);
+
+  // Skaluj kontekst dla renderowania w wysokiej rozdzielczości
+  ctxBoard.save();
+  ctxBoard.scale(scaleFactor, scaleFactor);
+
+  // Włącz wygładzanie dla lepszej jakości
+  ctxBoard.imageSmoothingEnabled = true;
+  ctxBoard.imageSmoothingQuality = "high";
+
+  // Renderuj zawartość
+  drawGridAndContent(ctxBoard, options, 0, onImageLoaded);
+
+  // Przywróć kontekst
+  ctxBoard.restore();
+}
+
+function drawGridAndContent(ctx, options, marginForAxes, onImageLoaded) {
   const { isFront, pieces, boardRows, boardHeight, boardWidth } = options;
 
   const codeSectionY =
     boardHeight - boardGameState.codeRows * boardGameState.cellSize;
 
-  ctxBoard.canvas.width = boardWidth;
-  ctxBoard.canvas.height = boardHeight;
-  ctxOverlay.canvas.height = boardHeight;
-  ctxOverlay.canvas.width = boardWidth;
-  ctxBoard.clearRect(0, 0, ctxBoard.canvas.width, ctxBoard.canvas.height);
-  ctxOverlay.clearRect(0, 0, ctxOverlay.canvas.width, ctxOverlay.canvas.height);
-
-  drawGrid(ctxBoard, boardRows, boardRows, boardGameState.cellSize, 0, isFront);
+  drawGrid(
+    ctx,
+    boardRows,
+    boardRows,
+    boardGameState.cellSize,
+    marginForAxes,
+    isFront
+  );
 
   if (!isFront || boardGameState.isBoard50x50) {
     drawCodeGrid(
-      ctxBoard,
+      ctx,
       boardGameState.codeRows,
       boardRows,
       boardGameState.cellSize,
       null,
       false,
-      codeSectionY,
-      0
+      codeSectionY + marginForAxes,
+      marginForAxes
     );
-    const circleX = boardGameState.cellSize / 2;
-    const circleY =
-      boardRows * boardGameState.cellSize +
-      boardGameState.codeMargin +
-      boardGameState.cellSize / 2;
+
+    const circleX = marginForAxes + boardGameState.cellSize / 2;
+    const circleY = codeSectionY + marginForAxes + boardGameState.cellSize / 2;
     if (boardGameState.lockedImg) {
       drawCirclePiece(
-        ctxBoard,
+        ctx,
         circleX,
         circleY,
         boardGameState.cellSize,
@@ -60,49 +99,48 @@ export function drawBoard(ctxOverlay, ctxBoard, options) {
         boardGameState.lockedImg
       );
     } else {
-      const newLockedImg = new window.Image();
-      newLockedImg.src = "../assets/symbole_do_kodowania/img7.png";
-      newLockedImg.onload = function () {
-        boardGameState.lockedImg = newLockedImg;
+      // Użyj systemu buforowania obrazów zamiast bezpośredniego ładowania
+      const lockedImgSrc = "./assets/symbole_do_kodowania/img7.png";
+      loadImageWithBuffers(lockedImgSrc).then((loadedImg) => {
+        if (loadedImg) {
+          boardGameState.lockedImg = loadedImg;
 
-        drawCirclePiece(
-          ctxBoard,
-          circleX,
-          circleY,
-          boardGameState.cellSize,
-          "#4466b0",
-          newLockedImg
-        );
-      };
+          if (onImageLoaded && typeof onImageLoaded === "function") {
+            onImageLoaded();
+          }
+        }
+      });
     }
   }
-  drawPicture(ctxBoard, 0, 0, pieces);
+  drawPicture(ctx, marginForAxes, marginForAxes, pieces);
 
   if (!boardGameState.isBoard50x50 && !isFront) {
     // --- Linie przez środek planszy (tylko dla back) ---
-    ctxBoard.save();
-    ctxBoard.strokeStyle = "#ff0000";
-    ctxBoard.lineWidth = 3;
+    ctx.save();
+    ctx.strokeStyle = "#ff0000";
+    ctx.lineWidth = 3;
 
     const midCol = boardRows / 2;
     const midRow = boardRows / 2;
 
     // pionowa linia przez środek
-    ctxBoard.beginPath();
-    ctxBoard.moveTo(midCol * boardGameState.cellSize, 0);
-    ctxBoard.lineTo(
-      midCol * boardGameState.cellSize,
-      boardHeight - 4 * boardGameState.cellSize
+    ctx.beginPath();
+    ctx.moveTo(marginForAxes + midCol * boardGameState.cellSize, marginForAxes);
+    ctx.lineTo(
+      marginForAxes + midCol * boardGameState.cellSize,
+      marginForAxes + boardHeight - 4 * boardGameState.cellSize
     );
-    ctxBoard.stroke();
+    ctx.stroke();
 
     // pozioma linia przez środek
-    ctxBoard.beginPath();
-    ctxBoard.moveTo(0, midRow * boardGameState.cellSize);
-    ctxBoard.lineTo(boardWidth, midRow * boardGameState.cellSize);
-    ctxBoard.stroke();
-
-    ctxBoard.restore();
+    ctx.beginPath();
+    ctx.moveTo(marginForAxes, marginForAxes + midRow * boardGameState.cellSize);
+    ctx.lineTo(
+      marginForAxes + boardWidth,
+      marginForAxes + midRow * boardGameState.cellSize
+    );
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
@@ -224,7 +262,7 @@ export function drawCirclePiece(ctx, x, y, size, color, img) {
   ctx.arc(x, y, size * 0.45, 0, Math.PI * 2);
   ctx.fillStyle = color || "#ccc";
   ctx.fill();
-  ctx.strokeStyle = color === "#ffffff" ? "#000" : color;
+  ctx.strokeStyle = color === "#ffffff" ? "#000" : img ? color : "#000";
   ctx.lineWidth = 1;
   ctx.stroke();
   ctx.restore();
@@ -675,7 +713,7 @@ function drawPicture(ctx, marginForAxesX, marginForAxesY, pieces) {
           ctx,
           p.x + marginForAxesX,
           p.y + marginForAxesY,
-          boardGameState.cellSize,
+          Math.floor(boardGameState.cellSize * 0.99),
           p.color,
           img
         );

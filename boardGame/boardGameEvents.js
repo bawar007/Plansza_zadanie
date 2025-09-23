@@ -30,6 +30,7 @@ export function registerUIEvents(handlers) {
   document
     .getElementById("flipBoard")
     .addEventListener("click", handlers.onFlipBoard);
+
   document
     .getElementById("gridSizeSelector")
     .addEventListener("change", handlers.onGridSizeChange);
