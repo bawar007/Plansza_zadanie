@@ -9,6 +9,7 @@ import {
   getTouchPos,
   getCurrentPiecesTable,
   createPieceObj,
+  rescalePiecePositions,
 } from "./boardGameHelpers.js";
 import { boardGameState } from "./boardGameState.js";
 import {
@@ -37,6 +38,9 @@ const boardOverlay = document.getElementById("boardOverlay");
 const ctxOverlay = boardOverlay.getContext("2d");
 
 function updateCanvasSize() {
+  // Zapamiętaj poprzedni cellSize do przeliczania pozycji
+  const oldCellSize = boardGameState.cellSize;
+
   // Ustawmy najpierw cellSize w zależności od trybu
   if (boardGameState.isBoard50x50) {
     const isSmallScreen = window.innerWidth < 800;
@@ -74,6 +78,15 @@ function updateCanvasSize() {
       boardGameState.codeMargin = sizeM;
       boardGameState.cellSize = sizeM;
     }
+  }
+
+  // Przelicz pozycje elementów jeśli cellSize się zmienił
+  const newCellSize = boardGameState.cellSize;
+  if (oldCellSize && oldCellSize !== newCellSize) {
+    // Przelicz pozycje dla wszystkich trybów
+    rescalePiecePositions(boardGameState.piecesFront, oldCellSize, newCellSize);
+    rescalePiecePositions(boardGameState.piecesGrid, oldCellSize, newCellSize);
+    rescalePiecePositions(boardGameState.pieces50x50, oldCellSize, newCellSize);
   }
 
   // Oblicz rozmiary z prawidłową wartością cellSize

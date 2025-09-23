@@ -314,7 +314,8 @@ body {
   .mainWrapper #gameMain .pickerPanel .buttonsContainer .boardGameBtn {
     width: 95% !important;
     margin: 5px 0;
-    font-size: 18px !important;
+    font-size: 14px !important;
+    padding: 5px !important;
   }
   .mainWrapper #gameMain .pickerPanel .buttonsContainer #gridSizeSelector {
     width: 95%;
@@ -327,6 +328,9 @@ body {
     width: 36px;
     height: 36px;
     margin: 3px;
+  }
+  .imgButton span {
+    font-size: 16px !important;
   }
 }
 #gridSizeSelector,

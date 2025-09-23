@@ -288,3 +288,20 @@ export const isDrawableImage = (val) => {
     (typeof OffscreenCanvas !== "undefined" && val instanceof OffscreenCanvas)
   );
 };
+
+// Funkcja do przeliczania pozycji elementów przy zmianie cellSize
+export function rescalePiecePositions(pieces, oldCellSize, newCellSize) {
+  if (!pieces || pieces.length === 0 || oldCellSize === newCellSize) {
+    return;
+  }
+
+  pieces.forEach((piece) => {
+    // Przelicz pozycję na współrzędne komórki (zakładając że element był na środku komórki)
+    const col = Math.floor(piece.x / oldCellSize);
+    const row = Math.floor(piece.y / oldCellSize);
+
+    // Ustaw nową pozycję na środku nowej komórki
+    piece.x = col * newCellSize + newCellSize / 2;
+    piece.y = row * newCellSize + newCellSize / 2;
+  });
+}
