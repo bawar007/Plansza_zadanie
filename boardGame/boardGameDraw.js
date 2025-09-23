@@ -1116,18 +1116,33 @@ export async function drawPdfFile(coordToPrint) {
 }
 
 export async function createDiscImage(img, color, size = 60) {
+  const resizer = 3;
   const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
+  canvas.width = size * resizer;
+  canvas.height = size * resizer;
   const ctx = canvas.getContext("2d");
 
   if (img) {
     const loadedImg = await loadImageWithBuffers(img);
     if (loadedImg) {
-      drawCirclePiece(ctx, size / 2, size / 2, size, color, loadedImg);
+      drawCirclePiece(
+        ctx,
+        (size * resizer) / 2,
+        (size * resizer) / 2,
+        size * resizer,
+        color,
+        loadedImg
+      );
     }
   } else {
-    drawSquarePiece(ctx, size / 2, size / 2, size * 0.8, color);
+    drawSquarePiece(
+      ctx,
+      (size * resizer) / 2,
+      (size * resizer) / 2,
+      size * 0.8 * resizer,
+      color
+    );
   }
+  ctx.scale(1 / resizer, 1 / resizer);
   return canvas.toDataURL("image/png");
 }
