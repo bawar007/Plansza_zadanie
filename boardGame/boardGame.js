@@ -1067,6 +1067,7 @@ function initGame() {
   registerBoardWrapperEvents(boardWrapper, boardWrapperHandlers);
   registerWindowMouseEvents(windowMouseHandlers);
   registerUIEvents(uiHandlers);
+  updateCanvasSize();
   renderBoard();
 }
 

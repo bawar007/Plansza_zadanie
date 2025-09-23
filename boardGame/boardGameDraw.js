@@ -224,7 +224,7 @@ export function drawCirclePiece(ctx, x, y, size, color, img) {
   ctx.arc(x, y, size * 0.45, 0, Math.PI * 2);
   ctx.fillStyle = color || "#ccc";
   ctx.fill();
-  ctx.strokeStyle = color === "#ffffff" ? "#000" : "#333";
+  ctx.strokeStyle = color === "#ffffff" ? "#000" : color;
   ctx.lineWidth = 1;
   ctx.stroke();
   ctx.restore();
