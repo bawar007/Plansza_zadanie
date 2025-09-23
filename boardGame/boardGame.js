@@ -53,12 +53,12 @@ function updateCanvasSize() {
     boardOverlay.style.left = isNormalScreen
       ? 140 + "px"
       : isSmallScreen
-      ? 100 + "px"
+      ? 70 + "px"
       : 120 + "px";
     boardOverlay.style.top = isNormalScreen
       ? 140 + "px"
       : isSmallScreen
-      ? 100 + "px"
+      ? 70 + "px"
       : 120 + "px";
   } else {
     // Usuń klasę CSS dla wrapper
